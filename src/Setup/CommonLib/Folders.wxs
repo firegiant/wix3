@@ -32,7 +32,7 @@
     <Fragment>
         <DirectoryRef Id="TARGETDIR">
             <Directory Id="ProgramMenuFolder" Name="ProgMenu">
-                <Directory Id="ShortcutFolder" Name="WiX Toolset v$(var.WixMajorMinor)" />
+                <Directory Id="ShortcutFolder" Name="FireGiant - WiX Toolset v$(var.WixMajorMinor)" />
             </Directory>
         </DirectoryRef>
     </Fragment>

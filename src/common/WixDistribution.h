@@ -16,8 +16,8 @@
 #ifndef __WIXDISTRIBUTION_FILE_H_
 #define __WIXDISTRIBUTION_FILE_H_
 
-#define VER_COMPANY_NAME    "Outercurve Foundation"
-#define VER_LEGAL_COPYRIGHT "Copyright (c) Outercurve Foundation.\240 All rights reserved."
-#define VER_PRODUCT_NAME    "Windows Installer XML Toolset"
+#define VER_COMPANY_NAME    "FireGiant"
+#define VER_LEGAL_COPYRIGHT "Copyright (c) FireGiant and Outercurve Foundation.\240 All rights reserved."
+#define VER_PRODUCT_NAME    "FireGiant - WiX Toolset"
 
 #endif // __WIXDISTRIBUTION_FILE_H_
