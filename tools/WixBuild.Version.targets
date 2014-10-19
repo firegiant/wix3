@@ -27,8 +27,8 @@
         <BuildMonth>$([System.DateTime]::Now.Month)</BuildMonth>
         <BuildYear>$([System.DateTime]::Now.Year)</BuildYear>
         <BuildYearInMonths>$([MSBuild]::Multiply($([MSBuild]::Subtract($(BuildYear),$(StartBuildYear))), 12))</BuildYearInMonths>
-        <UpperBuildNumber>$([MSBuild]::Add($(BuildYearInMonths), $(BuildMonth)))</UpperBuildNumber>
-        <BuildNumber>$(UpperBuildNumber)$(BuildDay)</BuildNumber>
+        <UpperBuildNumber>$([MSBuild]::Add($(BuildYearInMonths), $(BuildMonth)).ToString("00"))</UpperBuildNumber>
+        <BuildNumber>1$(UpperBuildNumber)$(BuildDay)</BuildNumber>
         <BuildRevision>0</BuildRevision>
 
         <FullBuildVersionString>$(MajorBuildNumber).$(MinorBuildNumber).$(BuildNumber).$(BuildRevision)</FullBuildVersionString>

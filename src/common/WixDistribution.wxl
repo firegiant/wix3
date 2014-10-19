@@ -8,10 +8,10 @@
   </copyright>
 -->
 <WixLocalization xmlns="http://schemas.microsoft.com/wix/2006/localization">
-    <String Id="Company" Overridable="yes">Outercurve Foundation</String>
-    <String Id="Copyright" Overridable="yes">Copyright (c) Outercurve Foundation. All rights reserved.</String>
-    <String Id="Product" Overridable="yes">Windows Installer XML Toolset</String>
-    <String Id="ShortProduct" Overridable="yes">WiX Toolset</String>
-    <String Id="SupportUrl" Overridable="yes">http://wixtoolset.org</String>
-    <String Id="UpdateUrl" Overridable="yes">http://wixtoolset.org/releases/feed/v3.9</String>
+    <String Id="Company" Overridable="yes">FireGiant</String>
+    <String Id="Copyright" Overridable="yes">Copyright (c) FireGiant and Outercurve Foundation. All rights reserved.</String>
+    <String Id="Product" Overridable="yes">FireGiant - WiX Toolset</String>
+    <String Id="ShortProduct" Overridable="yes">FireGiant WiX Toolset</String>
+    <String Id="SupportUrl" Overridable="yes">http://support.firegiant.com/</String>
+    <String Id="UpdateUrl" Overridable="yes">http://www.firegiant.com/feeds/fgwix4.feed</String>
 </WixLocalization>
