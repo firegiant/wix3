@@ -2,12 +2,13 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Resources;
 
-[assembly: AssemblyCompany(".NET Foundation")]
-[assembly: AssemblyCopyright("Copyright (c) .NET Foundation and contributors. All rights reserved.")]
-[assembly: AssemblyProduct("Windows Installer XML Toolset")]
+[assembly: AssemblyCompany("FireGiant")]
+[assembly: AssemblyCopyright("Copyright (c) FireGiant and .NET Foundation and contributors. All rights reserved.")]
+[assembly: AssemblyProduct("FireGiant - WiX Toolset")]
 
 #if DEBUG
     [assembly: AssemblyConfiguration("DEBUG")]
@@ -26,22 +27,22 @@ namespace Microsoft.Tools.WindowsInstallerXml
         /// <summary>
         /// News URL for the distribution.
         /// </summary>
-        public static string NewsUrl = "http://wixtoolset.org/news/";
+        public static string NewsUrl = "https://www.firegiant.com/blog/";
 
         /// <summary>
         /// Short product name for the distribution.
         /// </summary>
-        public static string ShortProduct = "WiX Toolset";
+        public static string ShortProduct = "FireGiant WiX Toolset";
 
         /// <summary>
         /// Support URL for the distribution.
         /// </summary>
-        public static string SupportUrl = "http://wixtoolset.org/";
+        public static string SupportUrl = "https://support.firegiant.com/";
 
         /// <summary>
         /// Telemetry URL format for the distribution.
         /// </summary>
-        public static string TelemetryUrlFormat = "http://wixtoolset.org/telemetry/v{0}/?r={1}";
+        public static string TelemetryUrlFormat = "https://www.firegiant.com/telemetry/v{0}/?r={1}";
 
         /// <summary>
         /// VS Extensions Landing page Url for the distribution.
@@ -52,6 +53,15 @@ namespace Microsoft.Tools.WindowsInstallerXml
         {
             if (null != assembly)
             {
+                string commonVersionPath = Path.Combine(Path.GetDirectoryName(assembly.Location), "wixver.dll");
+                if (File.Exists(commonVersionPath))
+                {
+                    FileVersionInfo commonFileVersion = FileVersionInfo.GetVersionInfo(commonVersionPath);
+
+                    original = original.Replace("[FileCopyright]", commonFileVersion.LegalCopyright);
+                    original = original.Replace("[FileVersion]", commonFileVersion.FileVersion);
+                }
+
                 FileVersionInfo fileVersion = FileVersionInfo.GetVersionInfo(assembly.Location);
 
                 original = original.Replace("[FileComments]", fileVersion.Comments);
