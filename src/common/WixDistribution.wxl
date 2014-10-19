@@ -3,11 +3,11 @@
 
 
 <WixLocalization xmlns="http://schemas.microsoft.com/wix/2006/localization">
-    <String Id="Company" Overridable="yes">.NET Foundation</String>
-    <String Id="Copyright" Overridable="yes">Copyright (c) .NET Foundation and contributors. All rights reserved.</String>
-    <String Id="Product" Overridable="yes">Windows Installer XML Toolset</String>
-    <String Id="Regid" Overridable="yes">wixtoolset.org</String>
-    <String Id="ShortProduct" Overridable="yes">WiX Toolset</String>
-    <String Id="SupportUrl" Overridable="yes">http://wixtoolset.org</String>
-    <String Id="UpdateUrl" Overridable="yes">http://wixtoolset.org/releases/feed/v3.14</String>
+    <String Id="Company" Overridable="yes">FireGiant</String>
+    <String Id="Copyright" Overridable="yes">Copyright (c) FireGiant and .NET Foundation and contributors. All rights reserved.</String>
+    <String Id="Product" Overridable="yes">FireGiant - WiX Toolset</String>
+    <String Id="Regid" Overridable="yes">firegiant.com</String>
+    <String Id="ShortProduct" Overridable="yes">FireGiant WiX Toolset</String>
+    <String Id="SupportUrl" Overridable="yes">https://support.firegiant.com/</String>
+    <String Id="UpdateUrl" Overridable="yes">https://www.firegiant.com/feeds/fgwix3.feed</String>
 </WixLocalization>

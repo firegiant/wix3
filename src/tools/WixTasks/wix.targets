@@ -3075,4 +3075,5 @@
 
   <!-- MSBuildToolsVersion is set for MSBuild 3.5 and later, which is a requirement for lux.targets. -->
   <Import Project="$(LuxTargetsPath)" Condition=" '$(MSBuildToolsVersion)' != '' and '$(LuxTargetsPath)' != '' and Exists('$(LuxTargetsPath)')" />
+  <Import Project="$(FgWepTargetsFolder)fgwep.targets" Condition=" Exists('$(FgWepTargetsFolder)fgwep.targets') " />
 </Project>
