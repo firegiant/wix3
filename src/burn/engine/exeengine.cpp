@@ -441,8 +441,9 @@ extern "C" HRESULT ExeEngineExecutePackage(
     hr = CacheGetCompletedPath(pExecuteAction->exePackage.pPackage->fPerMachine, pExecuteAction->exePackage.pPackage->sczCacheId, &sczCachedDirectory);
     ExitOnFailure1(hr, "Failed to get cached path for package: %ls", pExecuteAction->exePackage.pPackage->sczId);
 
-    // Best effort to set the execute package cache folder variable.
+    // Best effort to set the execute package cache folder and action variables.
     VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, sczCachedDirectory, TRUE);
+    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, pExecuteAction->exePackage.action, TRUE);
 
     hr = PathConcat(sczCachedDirectory, pExecuteAction->exePackage.pPackage->rgPayloads[0].pPayload->sczFilePath, &sczExecutablePath);
     ExitOnFailure(hr, "Failed to build executable path.");
@@ -583,8 +584,10 @@ LExit:
     ReleaseHandle(pi.hThread);
     ReleaseHandle(pi.hProcess);
 
-    // Best effort to clear the execute package cache folder variable.
+    // TODO: Figure out if we care about "clearing" BURN_BUNDLE_EXECUTE_PACKAGE_ACTION (= 0)
+    // Best effort to clear the execute package cache folder and action variables.
     VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, NULL, TRUE);
+    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, BOOTSTRAPPER_ACTION_STATE_NONE, TRUE);
 
     return hr;
 }
