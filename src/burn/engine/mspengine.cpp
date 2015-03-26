@@ -491,6 +491,7 @@ extern "C" HRESULT MspEngineExecutePackage(
             hr = CacheGetCompletedPath(pMspPackage->fPerMachine, pMspPackage->sczCacheId, &sczCachedDirectory);
             ExitOnFailure1(hr, "Failed to get cached path for MSP package: %ls", pMspPackage->sczId);
 
+            // TODO: Figure out if this makes sense -- the variable is set to the last patch's path only
             // Best effort to set the execute package cache folder variable.
             VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, sczCachedDirectory, TRUE);
 
@@ -513,6 +514,9 @@ extern "C" HRESULT MspEngineExecutePackage(
         hr = StrAllocConcat(&sczPatches, wzAppend, 0);
         ExitOnFailure(hr, "Failed to append patch.");
     }
+
+    // Best effort to set the execute package action variable.
+    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, pExecuteAction->mspTarget.action, TRUE);
 
     // Wire up the external UI handler and logging.
     hr = WiuInitializeExternalUI(pfnMessageHandler, uiLevel, hwndParent, pvContext, fRollback, &context);
@@ -595,8 +599,9 @@ LExit:
             break;
     }
 
-    // Best effort to clear the execute package cache folder variable.
+    // Best effort to clear the execute package cache folder and action variables.
     VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, NULL, TRUE);
+    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, BOOTSTRAPPER_ACTION_STATE_NONE, TRUE);
 
     return hr;
 }
