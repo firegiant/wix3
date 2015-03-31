@@ -4574,10 +4574,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     foreach (CommandLineInfo commandLine in package.CommandLines)
                     {
                         writer.WriteStartElement("CommandLine");
-                        writer.WriteAttributeString("PackageId", commandLine.PackageId);
-                        writer.WriteAttributeString("InstallCommand", commandLine.InstallCommand);
-                        writer.WriteAttributeString("UninstallCommand", commandLine.UninstallCommand);
-                        writer.WriteAttributeString("RepairCommand", commandLine.RepairCommand);
+                        writer.WriteAttributeString("InstallArgument", commandLine.InstallArgument);
+                        writer.WriteAttributeString("UninstallArgument", commandLine.UninstallArgument);
+                        writer.WriteAttributeString("RepairArgument", commandLine.RepairArgument);
                         writer.WriteAttributeString("Condition", commandLine.Condition);
                         writer.WriteEndElement();
                     }

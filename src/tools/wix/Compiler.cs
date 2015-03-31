@@ -21912,9 +21912,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
         private void ParseCommandLineElement(XmlNode node, string packageId)
         {
             SourceLineNumberCollection sourceLineNumbers = Preprocessor.GetSourceLineNumbers(node);
-            string installCommand = null;
-            string uninstallCommand = null;
-            string repairCommand = null;
+            string installArgument = null;
+            string uninstallArgument = null;
+            string repairArgument = null;
             string condition = null;
 
             foreach (XmlAttribute attrib in node.Attributes)
@@ -21923,14 +21923,14 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 {
                     switch (attrib.LocalName)
                     {
-                        case "InstallCommand":
-                            installCommand = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                        case "InstallArgument":
+                            installArgument = this.core.GetAttributeValue(sourceLineNumbers, attrib);
                             break;
-                        case "UninstallCommand":
-                            uninstallCommand = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                        case "UninstallArgument":
+                            uninstallArgument = this.core.GetAttributeValue(sourceLineNumbers, attrib);
                             break;
-                        case "RepairCommand":
-                            repairCommand = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                        case "RepairArgument":
+                            repairArgument = this.core.GetAttributeValue(sourceLineNumbers, attrib);
                             break;
                         case "Condition":
                             condition = this.core.GetAttributeValue(sourceLineNumbers, attrib);
@@ -21973,9 +21973,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
             {
                 Row row = this.core.CreateRow(sourceLineNumbers, "WixCommandLine");
                 row[0] = packageId;
-                row[1] = installCommand;
-                row[2] = uninstallCommand;
-                row[3] = repairCommand;
+                row[1] = installArgument;
+                row[2] = uninstallArgument;
+                row[3] = repairArgument;
                 row[4] = condition;
             }
         }

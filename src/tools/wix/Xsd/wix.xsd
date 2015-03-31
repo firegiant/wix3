@@ -1241,17 +1241,17 @@
       </xs:appinfo>
     </xs:annotation>
     <xs:complexType>
-      <xs:attribute name="InstallCommand" type="xs:string">
+      <xs:attribute name="InstallArgument" type="xs:string">
         <xs:annotation>
           <xs:documentation>Additional command-line arguments to apply during package installation if Condition is true.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="UninstallCommand" type="xs:string">
+      <xs:attribute name="UninstallArgument" type="xs:string">
         <xs:annotation>
           <xs:documentation>Additional command-line arguments to apply during package uninstallation if Condition is true.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="RepairCommand" type="xs:string">
+      <xs:attribute name="RepairArgument" type="xs:string">
         <xs:annotation>
           <xs:documentation>Additional command-line arguments to apply during package repair if Condition is true.</xs:documentation>
         </xs:annotation>
@@ -1259,12 +1259,12 @@
       <xs:attribute name="Condition" type="xs:string">
         <xs:annotation>
           <xs:documentation>
-            The condition that controls whether the command-line arguments specified in the
-            InstallCommand, UninstallCommand, or RepairCommand attributes are appended to the
-            command line passed to the ExePackage. Which attribute is used depends on the
-            action being applied to the ExePackage. For example, when the ExePackage is 
-            being installed, the InstallCommand attribute value is appended to the command
-            line when the ExePackage is executed.
+              The condition that controls whether the command-line arguments specified in the
+              InstallArgument, UninstallArgument, or RepairArgument attributes are appended to the
+              command line passed to the ExePackage. Which attribute is used depends on the
+              action being applied to the ExePackage. For example, when the ExePackage is
+              being installed, the InstallArgument attribute value is appended to the command
+              line when the ExePackage is executed.
           </xs:documentation>
         </xs:annotation>
       </xs:attribute>

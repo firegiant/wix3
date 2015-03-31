@@ -28,16 +28,16 @@ namespace Microsoft.Tools.WindowsInstallerXml
         public CommandLineInfo(string packageId, string installCommand, string uninstallCommand, string repairCommand, string condition)
         {
             this.PackageId = packageId;
-            this.InstallCommand = installCommand;
-            this.UninstallCommand = uninstallCommand;
-            this.RepairCommand = repairCommand;
+            this.InstallArgument = installCommand;
+            this.UninstallArgument = uninstallCommand;
+            this.RepairArgument = repairCommand;
             this.Condition = condition;
         }
 
         public string PackageId { get; private set; }
-        public string InstallCommand { get; private set; }
-        public string UninstallCommand { get; private set; }
-        public string RepairCommand { get; private set; }
+        public string InstallArgument { get; private set; }
+        public string UninstallArgument { get; private set; }
+        public string RepairArgument { get; private set; }
         public string Condition { get; private set; }
     }
 }
