@@ -530,6 +530,7 @@ extern "C" HRESULT ExeEngineExecutePackage(
     BOOL fChangedCurrentDirectory = FALSE;
     int nResult = IDNOACTION;
     LPCWSTR wzArguments = NULL;
+    LPWSTR sczArguments = NULL;
     LPWSTR sczArgumentsFormatted = NULL;
     LPWSTR sczArgumentsObfuscated = NULL;
     LPWSTR sczCachedDirectory = NULL;
@@ -572,16 +573,57 @@ extern "C" HRESULT ExeEngineExecutePackage(
         ExitOnFailure(hr, "Failed to get action arguments for executable package.");
     }
 
-    // build command
-    if (wzArguments && *wzArguments)
+    // now add optional arguments
+    hr = StrAllocString(&sczArguments, wzArguments && *wzArguments ? wzArguments : L"", 0);
+    ExitOnFailure(hr, "Failed to copy package arguments.");
+
+    for (DWORD i = 0; i < pExecuteAction->exePackage.pPackage->Exe.cCommandLineArguments; ++i)
     {
-        hr = VariableFormatString(pVariables, wzArguments, &sczArgumentsFormatted, NULL);
+        BURN_EXE_COMMAND_LINE_ARGUMENT* commandLineArgument = &pExecuteAction->exePackage.pPackage->Exe.rgCommandLineArguments[i];
+        BOOL fCondition = FALSE;
+
+        hr = ConditionEvaluate(pVariables, commandLineArgument->sczCondition, &fCondition);
+        ExitOnFailure(hr, "Failed to evaluate executable package command-line condition.");
+
+        if (fCondition)
+        {
+            hr = StrAllocConcat(&sczArguments, L" ", 0);
+            ExitOnFailure(hr, "Failed to separate command-line arguments.");
+
+            switch (pExecuteAction->exePackage.action)
+            {
+            case BOOTSTRAPPER_ACTION_STATE_INSTALL:
+                hr = StrAllocConcat(&sczArguments, commandLineArgument->sczInstallArgument, 0);
+                ExitOnFailure(hr, "Failed to get command-line argument for install.");
+                break;
+
+            case BOOTSTRAPPER_ACTION_STATE_UNINSTALL:
+                hr = StrAllocConcat(&sczArguments, commandLineArgument->sczUninstallArgument, 0);
+                ExitOnFailure(hr, "Failed to get command-line argument for uninstall.");
+                break;
+
+            case BOOTSTRAPPER_ACTION_STATE_REPAIR:
+                hr = StrAllocConcat(&sczArguments, commandLineArgument->sczRepairArgument, 0);
+                ExitOnFailure(hr, "Failed to get command-line argument for repair.");
+                break;
+
+            default:
+                hr = E_UNEXPECTED;
+                ExitOnFailure(hr, "Failed to get command-line arguments for executable package.");
+            }
+        }
+    }
+
+    // build command
+    if (0 < lstrlenW(sczArguments))
+    {
+        hr = VariableFormatString(pVariables, sczArguments, &sczArgumentsFormatted, NULL);
         ExitOnFailure(hr, "Failed to format argument string.");
 
         hr = StrAllocFormattedSecure(&sczCommand, L"\"%ls\" %s", sczExecutablePath, sczArgumentsFormatted);
         ExitOnFailure(hr, "Failed to create executable command.");
 
-        hr = VariableFormatStringObfuscated(pVariables, wzArguments, &sczArgumentsObfuscated, NULL);
+        hr = VariableFormatStringObfuscated(pVariables, sczArguments, &sczArgumentsObfuscated, NULL);
         ExitOnFailure(hr, "Failed to format obfuscated argument string.");
 
         hr = StrAllocFormatted(&sczCommandObfuscated, L"\"%ls\" %s", sczExecutablePath, sczArgumentsObfuscated);
@@ -678,6 +720,7 @@ LExit:
         ::SetCurrentDirectoryW(wzCurrentDirectory);
     }
 
+    StrSecureZeroFreeString(sczArguments);
     StrSecureZeroFreeString(sczArgumentsFormatted);
     ReleaseStr(sczArgumentsObfuscated);
     ReleaseStr(sczCachedDirectory);
