@@ -599,9 +599,8 @@ LExit:
             break;
     }
 
-    // Best effort to clear the execute package cache folder and action variables.
+    // Best effort to clear the execute package cache folder variable.
     VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, NULL, TRUE);
-    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, BOOTSTRAPPER_ACTION_STATE_NONE, TRUE);
 
     return hr;
 }

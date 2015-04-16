@@ -569,8 +569,8 @@ extern "C" HRESULT ExeEngineExecutePackage(
         break;
 
     default:
-        hr = E_UNEXPECTED;
-        ExitOnFailure(hr, "Failed to get action arguments for executable package.");
+        hr = E_INVALIDARG;
+        ExitOnFailure1(hr, "Invalid Exe package action: %d.", pExecuteAction->exePackage.action);
     }
 
     // now add optional arguments
@@ -608,8 +608,8 @@ extern "C" HRESULT ExeEngineExecutePackage(
                 break;
 
             default:
-                hr = E_UNEXPECTED;
-                ExitOnFailure(hr, "Failed to get command-line arguments for executable package.");
+                hr = E_INVALIDARG;
+                ExitOnFailure1(hr, "Invalid Exe package action: %d.", pExecuteAction->exePackage.action);
             }
         }
     }
@@ -731,10 +731,8 @@ LExit:
     ReleaseHandle(pi.hThread);
     ReleaseHandle(pi.hProcess);
 
-    // TODO: Figure out if we care about "clearing" BURN_BUNDLE_EXECUTE_PACKAGE_ACTION (= 0)
-    // Best effort to clear the execute package cache folder and action variables.
+    // Best effort to clear the execute package cache folder variable.
     VariableSetString(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_CACHE_FOLDER, NULL, TRUE);
-    VariableSetNumeric(pVariables, BURN_BUNDLE_EXECUTE_PACKAGE_ACTION, BOOTSTRAPPER_ACTION_STATE_NONE, TRUE);
 
     return hr;
 }
