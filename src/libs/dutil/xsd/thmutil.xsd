@@ -285,6 +285,19 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="Combobox">
+        <xs:annotation>
+            <xs:documentation>Defines a combobox.</xs:documentation>
+            <xs:appinfo>
+                <xse:parent namespace="http://wixtoolset.org/schemas/thmutil/2010" ref="Page" />
+                <xse:parent namespace="http://wixtoolset.org/schemas/thmutil/2010" ref="Theme" />
+            </xs:appinfo>
+        </xs:annotation>
+      <xs:complexType>
+        <xs:attributeGroup ref="CommonControlAttributes" />
+      </xs:complexType>
+    </xs:element>
+
     <xs:element name="Editbox">
         <xs:annotation>
             <xs:documentation>Defines an edit box.</xs:documentation>
@@ -616,6 +629,7 @@
             <xs:element ref="Billboard" />
             <xs:element ref="Button" />
             <xs:element ref="Checkbox" />
+            <xs:element ref="Combobox" />
             <xs:element ref="Editbox" />
             <xs:element ref="Hyperlink" />
             <xs:element ref="Hypertext" />
