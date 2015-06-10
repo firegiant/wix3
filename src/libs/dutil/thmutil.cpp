@@ -2436,8 +2436,7 @@ static HRESULT ParseControls(
         {
             type = THEME_CONTROL_TYPE_TAB;
         }
-        else if (CSTR_EQUAL == ::CompareStringW(LOCALE_INVARIANT, 0, bstrType, -1, L"Combobox", -1) ||
-                 CSTR_EQUAL == ::CompareStringW(LOCALE_INVARIANT, 0, bstrType, -1, L"cm", 2))
+        else if (CSTR_EQUAL == ::CompareStringW(LOCALE_INVARIANT, 0, bstrType, -1, L"Combobox", -1))
         {
             type = THEME_CONTROL_TYPE_COMBOBOX;
         }
