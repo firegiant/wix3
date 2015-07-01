@@ -298,9 +298,14 @@
                 <xse:parent namespace="http://wixtoolset.org/schemas/thmutil/2010" ref="Theme" />
             </xs:appinfo>
         </xs:annotation>
-      <xs:complexType>
-        <xs:attributeGroup ref="CommonControlAttributes" />
-      </xs:complexType>
+        <xs:complexType>
+            <xs:attributeGroup ref="CommonControlAttributes" />
+            <xs:attribute name="FontId" type="xs:nonNegativeInteger" use="required">
+                <xs:annotation>
+                    <xs:documentation>Numeric identifier to the Font element that serves as the font for the control.</xs:documentation>
+                </xs:annotation>
+             </xs:attribute>
+        </xs:complexType>
     </xs:element>
 
     <xs:element name="Editbox">
