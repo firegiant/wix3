@@ -2243,7 +2243,7 @@ LExit:
 wcsistr - case insensitive find a substring
 
 ****************************************************************************/
-extern "C" LPCWSTR wcsistr(
+extern "C" LPCWSTR DAPI wcsistr(
     __in_z LPCWSTR wzString,
     __in_z LPCWSTR wzCharSet
     )
