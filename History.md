@@ -1,3 +1,5 @@
+* BobArnson: Have Burn rewrite ARP DisplayName during modify so changes to WixBundleName are reflected in ARP.
+
 * MikeGC: WIXBUG:4852 - Keep QuietExec function definition the same as in prior versions to avoid breaking anyone. The new function (with more parameters) is now named QuietExecEx.
 
 ## WixBuild: Version 3.9.1208.0
