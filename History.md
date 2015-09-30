@@ -1,3 +1,5 @@
+* BobArnson: Have Burn rewrite ARP DisplayName during modify so changes to WixBundleName are reflected in ARP.
+
 ## WixBuild: Version 3.10.2.2516
 
 * RobMen: Fix WiX v3.10.2 build version.
