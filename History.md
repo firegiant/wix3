@@ -1,3 +1,5 @@
+* BobArnson: Have Burn rewrite ARP DisplayName during modify so changes to WixBundleName are reflected in ARP.
+
 ## WixBuild: Version 3.10.1.2213
 
 * PavelAnfimov: WIXBUG:4772 - Add support for Windows XP for ShelExecUnelevated.
