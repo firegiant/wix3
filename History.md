@@ -1,3 +1,5 @@
+* BobArnson: Have Burn rewrite ARP DisplayName during modify so changes to WixBundleName are reflected in ARP.
+
 ## WixBuild: Version 3.10.3.3007
 
 * SeanHall: WIXBUG:5308 - Make embedded bundles launch a clean room process so the BA runs in a consistent environment.
@@ -145,7 +147,7 @@
 
 * BobArnson: WIXBUG:4700 - Added blurb about SequenceType.first.
 
-* BobArnson: Project reference tweaks: 
+* BobArnson: Project reference tweaks:
   - Removed unnecessary reference to setupicons from x64msi.
   - Move BuildInParallel=false from global to just project that needs it
 
