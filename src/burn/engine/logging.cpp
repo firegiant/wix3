@@ -267,6 +267,8 @@ extern "C" LPCSTR LoggingActionStateToString(
         return "AdminInstall";
     case BOOTSTRAPPER_ACTION_STATE_MODIFY:
         return "Modify";
+    case BOOTSTRAPPER_ACTION_STATE_MEND:
+        return "Mend";
     case BOOTSTRAPPER_ACTION_STATE_REPAIR:
         return "Repair";
     case BOOTSTRAPPER_ACTION_STATE_MINOR_UPGRADE:
@@ -546,6 +548,8 @@ extern "C" LPCSTR LoggingRequestStateToString(
         return "Cache";
     case BOOTSTRAPPER_REQUEST_STATE_PRESENT:
         return "Present";
+    case BOOTSTRAPPER_REQUEST_STATE_MEND:
+        return "Mend";
     case BOOTSTRAPPER_REQUEST_STATE_REPAIR:
         return "Repair";
     default:
