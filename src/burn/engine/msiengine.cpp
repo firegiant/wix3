@@ -727,7 +727,7 @@ extern "C" HRESULT MsiEnginePlanCalculatePackage(
     {
     case BOOTSTRAPPER_PACKAGE_STATE_PRESENT: __fallthrough;
     case BOOTSTRAPPER_PACKAGE_STATE_SUPERSEDED:
-        if (BOOTSTRAPPER_REQUEST_STATE_PRESENT == pPackage->requested || BOOTSTRAPPER_REQUEST_STATE_REPAIR == pPackage->requested)
+        if (BOOTSTRAPPER_REQUEST_STATE_PRESENT == pPackage->requested || BOOTSTRAPPER_REQUEST_STATE_MEND == pPackage->requested || BOOTSTRAPPER_REQUEST_STATE_REPAIR == pPackage->requested)
         {
             // Take a look at the version and determine if this is a potential
             // minor upgrade (same ProductCode newer ProductVersion), otherwise,
@@ -735,6 +735,10 @@ extern "C" HRESULT MsiEnginePlanCalculatePackage(
             if (qwVersion > qwInstalledVersion)
             {
                 execute = BOOTSTRAPPER_ACTION_STATE_MINOR_UPGRADE;
+            }
+            else if (BOOTSTRAPPER_REQUEST_STATE_MEND == pPackage->requested)
+            {
+                execute = BOOTSTRAPPER_ACTION_STATE_MEND;
             }
             else if (BOOTSTRAPPER_REQUEST_STATE_REPAIR == pPackage->requested)
             {
@@ -764,6 +768,7 @@ extern "C" HRESULT MsiEnginePlanCalculatePackage(
         switch (pPackage->requested)
         {
         case BOOTSTRAPPER_REQUEST_STATE_PRESENT: __fallthrough;
+        case BOOTSTRAPPER_REQUEST_STATE_MEND: __fallthrough;
         case BOOTSTRAPPER_REQUEST_STATE_REPAIR:
             execute = BOOTSTRAPPER_ACTION_STATE_INSTALL;
             break;
@@ -779,6 +784,7 @@ extern "C" HRESULT MsiEnginePlanCalculatePackage(
         switch (pPackage->requested)
         {
         case BOOTSTRAPPER_REQUEST_STATE_PRESENT: __fallthrough;
+        case BOOTSTRAPPER_REQUEST_STATE_MEND: __fallthrough;
         case BOOTSTRAPPER_REQUEST_STATE_REPAIR:
             execute = BOOTSTRAPPER_ACTION_STATE_INSTALL;
             break;
@@ -1222,11 +1228,13 @@ extern "C" HRESULT MsiEngineExecutePackage(
         break;
 
     case BOOTSTRAPPER_ACTION_STATE_MODIFY: __fallthrough;
+    case BOOTSTRAPPER_ACTION_STATE_MEND: __fallthrough;
     case BOOTSTRAPPER_ACTION_STATE_REPAIR:
         {
         LPCWSTR wzReinstallAll = (BOOTSTRAPPER_ACTION_STATE_MODIFY == pExecuteAction->msiPackage.action ||
                                   pExecuteAction->msiPackage.pPackage->Msi.cFeatures) ? L"" : L" REINSTALL=ALL";
-        LPCWSTR wzReinstallMode = (BOOTSTRAPPER_ACTION_STATE_MODIFY == pExecuteAction->msiPackage.action) ? L"o" : L"e";
+        LPCWSTR wzReinstallMode = (BOOTSTRAPPER_ACTION_STATE_MODIFY == pExecuteAction->msiPackage.action
+            || BOOTSTRAPPER_ACTION_STATE_MEND == pExecuteAction->msiPackage.action) ? L"o" : L"e";
 
         hr = StrAllocFormattedSecure(&sczProperties, L"%ls%ls REINSTALLMODE=\"cmus%ls\" REBOOT=ReallySuppress", sczProperties ? sczProperties : L"", wzReinstallAll, wzReinstallMode);
         ExitOnFailure(hr, "Failed to add reinstall mode and reboot suppression properties on repair.");
