@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?include "caerr.wxi" ?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+    <Fragment>
+        <!--This is our impersonated, deferred version of the WiX equivalents that are no-impersonate, deferred.-->
+        <CustomAction Id="FConfigureUsers" BinaryKey="UserCA" DllEntry="ConfigureUsers" />
+        <CustomAction Id="FCreateUser" BinaryKey="UserCA" DllEntry="CreateUser" Impersonate="yes" Execute="deferred" HideTarget="yes" />
+        <CustomAction Id="FCreateUserRollback" BinaryKey="UserCA" DllEntry="RemoveUser" Impersonate="yes" Execute="rollback" HideTarget="yes" />
+
+        <InstallExecuteSequence>
+            <Custom Action="FConfigureUsers" Before="InstallFiles">VersionNT &gt; 400</Custom>
+        </InstallExecuteSequence>
+
+        <UI>
+            <Error Id="$(var.msierrUSRFailedUserCreate)">!(loc.FailedUserCreate)</Error>
+            <Error Id="$(var.msierrUSRFailedUserCreatePswd)">!(loc.FailedUserCreatePswd)</Error>
+        </UI>
+    </Fragment>
+</Wix>
