@@ -155,6 +155,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Bootstrapper
         Install,
         AdminInstall,
         Modify,
+        Mend,
         Repair,
         MinorUpgrade,
         MajorUpgrade,
@@ -248,6 +249,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Bootstrapper
         Absent,
         Cache,
         Present,
+        Mend,
         Repair,
     }
 
