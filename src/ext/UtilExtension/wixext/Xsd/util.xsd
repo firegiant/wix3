@@ -922,6 +922,11 @@
                   </xs:documentation>
               </xs:annotation>
           </xs:attribute>
+          <xs:attribute name="Condition" type="xs:string">
+              <xs:annotation>
+                  <xs:documentation>Condition for evaluating the removal. If this evaluates to false, the removal is not executed at all.</xs:documentation>
+              </xs:annotation>
+          </xs:attribute>
           <xs:attribute name="On">
               <xs:annotation>
                   <xs:documentation>
