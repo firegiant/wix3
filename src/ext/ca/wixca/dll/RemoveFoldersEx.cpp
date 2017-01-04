@@ -2,8 +2,8 @@
 
 #include "precomp.h"
 
-LPCWSTR vcsRemoveFolderExQuery = L"SELECT `WixRemoveFolderEx`, `Component_`, `Property`, `InstallMode` FROM `WixRemoveFolderEx`";
-enum eRemoveFolderExQuery { rfqId = 1, rfqComponent, rfqProperty, feqMode };
+LPCWSTR vcsRemoveFolderExQuery = L"SELECT `WixRemoveFolderEx`, `Component_`, `Property`, `InstallMode`, `Condition` FROM `WixRemoveFolderEx`";
+enum eRemoveFolderExQuery { rfqId = 1, rfqComponent, rfqProperty, rfqMode, rfqCondition };
 
 static HRESULT RecursePath(
     __in_z LPCWSTR wzPath,
@@ -34,7 +34,7 @@ static HRESULT RecursePath(
         er = ::GetLastError();
         if (ERROR_PATH_NOT_FOUND == er)
         {
-            WcaLog(LOGMSG_STANDARD, "Search path not found: %ls", sczSearch);
+            WcaLog(LOGMSG_STANDARD, "Search path not found: %ls; skipping", sczSearch);
             ExitFunction1(hr = S_FALSE);
         }
         else
@@ -110,6 +110,7 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
     LPWSTR sczId = NULL;
     LPWSTR sczComponent = NULL;
     LPWSTR sczProperty = NULL;
+    LPWSTR sczCondition = NULL;
     LPWSTR sczPath = NULL;
     LPWSTR sczExpandedPath = NULL;
     int iMode = 0;
@@ -137,13 +138,30 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
         hr = WcaGetRecordString(hRec, rfqId, &sczId);
         ExitOnFailure(hr, "Failed to get remove folder identity.");
 
+        hr = WcaGetRecordString(hRec, rfqCondition, &sczCondition);
+        ExitOnFailure(hr, "Failed to get remove folder condition.");
+
+        if (sczCondition && *sczCondition)
+        {
+            MSICONDITION condition = ::MsiEvaluateConditionW(hInstall, sczCondition);
+            if (MSICONDITION_TRUE == condition)
+            {
+                WcaLog(LOGMSG_STANDARD, "True condition for row %S: %S; processing.", sczId, sczCondition);
+            }
+            else
+            {
+                WcaLog(LOGMSG_STANDARD, "False or invalid condition for row %S: %S; skipping.", sczId, sczCondition);
+                continue;
+            }
+        }
+
         hr = WcaGetRecordString(hRec, rfqComponent, &sczComponent);
         ExitOnFailure(hr, "Failed to get remove folder component.");
 
         hr = WcaGetRecordString(hRec, rfqProperty, &sczProperty);
         ExitOnFailure(hr, "Failed to get remove folder property.");
 
-        hr = WcaGetRecordInteger(hRec, feqMode, &iMode);
+        hr = WcaGetRecordInteger(hRec, rfqMode, &iMode);
         ExitOnFailure(hr, "Failed to get remove folder mode");
 
         hr = WcaGetProperty(sczProperty, &sczPath);
@@ -190,6 +208,7 @@ LExit:
     ReleaseStr(sczPath);
     ReleaseStr(sczProperty);
     ReleaseStr(sczComponent);
+    ReleaseStr(sczCondition);
     ReleaseStr(sczId);
 
     DWORD er = SUCCEEDED(hr) ? ERROR_SUCCESS : ERROR_INSTALL_FAILURE;
