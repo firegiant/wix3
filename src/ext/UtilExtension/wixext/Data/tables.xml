@@ -32,6 +32,8 @@
                 category="identifier" description="Name of Property that contains the root of the directory tree to remove."/>
         <columnDefinition name="InstallMode" type="number" length="2"
                 minValue="1" maxValue="3" description="1 == Remove only when the associated component is being installed (msiInstallStateLocal or msiInstallStateSource), 2 == Remove only when the associated component is being removed (msiInstallStateAbsent), 3 = Remove in either of the above cases."/>
+        <columnDefinition name="Condition" type="string" length="0" nullable="yes" localizable="yes" modularize="condition"
+                category="condition" description="Optional expression which skips the removal."/>
     </tableDefinition>
     <tableDefinition name="WixRestartResource">
         <columnDefinition name="WixRestartResource" type="string" length="72" primaryKey="yes" modularize="column"

@@ -3064,6 +3064,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
             string id = null;
             int on = (int)WixRemoveFolderExOn.Uninstall;
             string property = null;
+            string condition = null;
 
             foreach (XmlAttribute attrib in node.Attributes)
             {
@@ -3071,6 +3072,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 {
                     switch (attrib.LocalName)
                     {
+                        case "Condition":
+                            condition = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
                         case "Id":
                             id = this.Core.GetAttributeIdentifierValue(sourceLineNumbers, attrib);
                             break;
@@ -3146,6 +3150,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 row[1] = componentId;
                 row[2] = property;
                 row[3] = on;
+                row[4] = condition;
 
                 this.Core.EnsureTable(sourceLineNumbers, "RemoveFile");
                 this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixRemoveFoldersEx");
