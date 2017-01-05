@@ -2,8 +2,11 @@
 
 #include "precomp.h"
 
-LPCWSTR vcsRemoveFolderExQuery = L"SELECT `WixRemoveFolderEx`, `Component_`, `Property`, `InstallMode`, `Condition` FROM `WixRemoveFolderEx`";
-enum eRemoveFolderExQuery { rfqId = 1, rfqComponent, rfqProperty, rfqMode, rfqCondition };
+LPCWSTR vcsRemoveFolderExQuery = 
+    L"SELECT `WixRemoveFolderEx`, `Component_`, `Property`, `InstallMode`, `WixRemoveFolderEx`.`Condition`, `Component`.`Attributes` "
+    L"FROM `WixRemoveFolderEx`,`Component` "
+    L"WHERE `WixRemoveFolderEx`.`Component_`=`Component`.`Component`";
+enum eRemoveFolderExQuery { rfqId = 1, rfqComponent, rfqProperty, rfqMode, rfqCondition, rfqComponentAttributes };
 
 static HRESULT RecursePath(
     __in_z LPCWSTR wzPath,
@@ -11,6 +14,7 @@ static HRESULT RecursePath(
     __in_z LPCWSTR wzComponent,
     __in_z LPCWSTR wzProperty,
     __in int iMode,
+    __in BOOL fDisableWow64Redirection,
     __inout DWORD* pdwCounter,
     __inout MSIHANDLE* phTable,
     __inout MSIHANDLE* phColumns
@@ -23,6 +27,12 @@ static HRESULT RecursePath(
     HANDLE hFind = INVALID_HANDLE_VALUE;
     WIN32_FIND_DATAW wfd;
     LPWSTR sczNext = NULL;
+
+    if (fDisableWow64Redirection)
+    {
+        hr = WcaDisableWow64FSRedirection();
+        ExitOnFailure(hr, "Custom action was told to act on a 64-bit component, but was unable to disable filesystem redirection through the Wow64 API.");
+    }
 
     // First recurse down to all the child directories.
     hr = StrAllocFormatted(&sczSearch, L"%s*", wzPath);
@@ -55,7 +65,8 @@ static HRESULT RecursePath(
         hr = StrAllocFormatted(&sczNext, L"%s%s\\", wzPath, wfd.cFileName);
         ExitOnFailure2(hr, "Failed to concat filename '%S' to string: %S", wfd.cFileName, wzPath);
 
-        hr = RecursePath(sczNext, wzId, wzComponent, wzProperty, iMode, pdwCounter, phTable, phColumns);
+        // Don't re-disable redirection; if it was necessary, we've already done it.
+        hr = RecursePath(sczNext, wzId, wzComponent, wzProperty, iMode, FALSE, pdwCounter, phTable, phColumns);
         ExitOnFailure1(hr, "Failed to recurse path: %S", sczNext);
     } while (::FindNextFileW(hFind, &wfd));
 
@@ -92,6 +103,11 @@ LExit:
         ::FindClose(hFind);
     }
 
+    if (fDisableWow64Redirection)
+    {
+        WcaRevertWow64FSRedirection();
+    }
+
     ReleaseStr(sczNext);
     ReleaseStr(sczProperty);
     ReleaseStr(sczSearch);
@@ -114,6 +130,8 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
     LPWSTR sczPath = NULL;
     LPWSTR sczExpandedPath = NULL;
     int iMode = 0;
+    int iComponentAttributes;
+    BOOL f64BitComponent = FALSE;
     DWORD dwCounter = 0;
     DWORD_PTR cchLen = 0;
     MSIHANDLE hTable = NULL;
@@ -121,6 +139,8 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
 
     hr = WcaInitialize(hInstall, "WixRemoveFoldersEx");
     ExitOnFailure(hr, "Failed to initialize WixRemoveFoldersEx.");
+
+    WcaInitializeWow64();
 
     // anything to do?
     if (S_OK != WcaTableExists(L"WixRemoveFolderEx"))
@@ -167,6 +187,11 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
         hr = WcaGetProperty(sczProperty, &sczPath);
         ExitOnFailure2(hr, "Failed to resolve remove folder property: %S for row: %S", sczProperty, sczId);
 
+        hr = WcaGetRecordInteger(hRec, rfqComponentAttributes, &iComponentAttributes);
+        ExitOnFailure1(hr, "failed to get component attributes for row: %ls", sczId);
+
+        f64BitComponent = iComponentAttributes & msidbComponentAttributes64bit;
+
         // fail early if the property isn't set as you probably don't want your installers trying to delete SystemFolder
         // StringCchLengthW succeeds only if the string is zero characters plus 1 for the terminating null
         hr = ::StringCchLengthW(sczPath, 1, reinterpret_cast<UINT_PTR*>(&cchLen));
@@ -182,7 +207,7 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
         ExitOnFailure1(hr, "Failed to backslash-terminate path: %S", sczExpandedPath);
     
         WcaLog(LOGMSG_STANDARD, "Recursing path: %S for row: %S.", sczExpandedPath, sczId);
-        hr = RecursePath(sczExpandedPath, sczId, sczComponent, sczProperty, iMode, &dwCounter, &hTable, &hColumns);
+        hr = RecursePath(sczExpandedPath, sczId, sczComponent, sczProperty, iMode, f64BitComponent, &dwCounter, &hTable, &hColumns);
         ExitOnFailure2(hr, "Failed while navigating path: %S for row: %S", sczPath, sczId);
     }
 
@@ -194,6 +219,8 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
     ExitOnFailure(hr, "Failure occured while processing WixRemoveFolderEx table");
 
 LExit:
+    WcaFinalizeWow64();
+
     if (hColumns)
     {
         ::MsiCloseHandle(hColumns);
