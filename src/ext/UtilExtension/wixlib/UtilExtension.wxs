@@ -103,6 +103,14 @@
     </Fragment>
 
     <Fragment>
+        <CustomAction Id="WixRemoveRegistryKeyEx" BinaryKey="WixCA" DllEntry="WixRemoveRegistryKeyEx" Execute="immediate" Return="ignore" />
+        
+        <InstallExecuteSequence>
+            <Custom Action="WixRemoveRegistryKeyEx" Before="RemoveRegistryValues" />
+        </InstallExecuteSequence>
+    </Fragment>
+
+    <Fragment>
         <CustomAction Id="WixBroadcastSettingChange" BinaryKey="WixCA" DllEntry="WixBroadcastSettingChange" Execute="immediate" Return="ignore" SuppressModularization="yes" />
 
         <InstallExecuteSequence>

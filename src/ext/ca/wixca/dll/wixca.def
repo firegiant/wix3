@@ -32,6 +32,8 @@ EXPORTS
     WixSilentExec64
 ; RemoveFolders.cpp
     WixRemoveFoldersEx
+; RemoveRegistryKeyEx.cpp
+    WixRemoveRegistryKeyEx
 ; RestartManager.cpp
     WixRegisterRestartResources
 ; secureobjects.cpp
