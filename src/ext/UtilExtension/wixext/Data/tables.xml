@@ -23,6 +23,20 @@
         <columnDefinition name="Timeout" type="number" length="4" nullable="yes"
                 minValue="1" maxValue="2147483647" description="Timeout in milliseconds before scheduling restart or terminating application."/>
     </tableDefinition>
+    <tableDefinition name="WixRemoveRegistryKeyEx">
+        <columnDefinition name="WixRemoveRegistryKeyEx" type="string" length="72" primaryKey="yes" modularize="column"
+                category="identifier" description="Primary key, non-localized token."/>
+        <columnDefinition name="Component_" type="string" length="72" modularize="column"
+                keyTable="Component" keyColumn="1" category="identifier" description="Foreign key into the Component table referencing component that controls the removal of the registry key."/>
+        <columnDefinition name="Root" type="number" length="2"
+                minValue="-1" maxValue="3" description="The predefined root key for the registry value, one of rrkEnum."/>
+        <columnDefinition name="Key" type="localized" length="255" modularize="property"
+                category="regPath" description="The key for the registry value."/>
+        <columnDefinition name="InstallMode" type="number" length="2"
+                minValue="1" maxValue="2" description="1 == Remove only when the associated component is being installed (msiInstallStateLocal or msiInstallStateSource), 2 == Remove only when the associated component is being removed (msiInstallStateAbsent)."/>
+        <columnDefinition name="Condition" type="string" length="0" nullable="yes" localizable="yes" modularize="condition"
+                category="condition" description="Optional expression to control whether the registry key is removed."/>
+    </tableDefinition>
     <tableDefinition name="WixRemoveFolderEx" createSymbols="yes">
         <columnDefinition name="WixRemoveFolderEx" type="string" length="72" primaryKey="yes" modularize="column"
                 category="identifier" description="Identifier for the WixRemoveFolderEx row in the package."/>
