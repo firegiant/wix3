@@ -91,9 +91,15 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
 
         internal enum WixRemoveFolderExOn
         {
-          Install = 1,
-          Uninstall = 2,
-          Both = 3,
+            Install = 1,
+            Uninstall = 2,
+            Both = 3,
+        }
+
+        internal enum WixRemoveRegistryKeyExOn
+        {
+            Install = 1,
+            Uninstall = 2,
         }
 
         private static readonly Regex FindPropertyBrackets = new Regex(@"\[(?!\\|\])|(?<!\[\\\]|\[\\|\\\[)\]", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -207,6 +213,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                             break;
                         case "RemoveFolderEx":
                             this.ParseRemoveFolderExElement(element, componentId);
+                            break;
+                        case "RemoveRegistryKey":
+                            this.ParseRemoveRegistryKeyExElement(element, componentId);
                             break;
                         case "RestartResource":
                             this.ParseRestartResourceElement(element, componentId);
@@ -3156,7 +3165,119 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixRemoveFoldersEx");
             }
         }
-        
+
+        /// <summary>
+        /// Parses a RemoveRegistryKeyEx element.
+        /// </summary>
+        /// <param name="node">Element to parse.</param>
+        /// <param name="componentId">Identifier of parent component.</param>
+        private void ParseRemoveRegistryKeyExElement(XmlNode node, string componentId)
+        {
+            SourceLineNumberCollection sourceLineNumbers = Preprocessor.GetSourceLineNumbers(node);
+            string id = null;
+            int action = (int)WixRemoveRegistryKeyExOn.Uninstall;
+            string condition = null;
+            int root = CompilerCore.IntegerNotSet;
+            string key = null;
+
+            foreach (XmlAttribute attrib in node.Attributes)
+            {
+                if (0 == attrib.NamespaceURI.Length || attrib.NamespaceURI == this.schema.TargetNamespace)
+                {
+                    switch (attrib.LocalName)
+                    {
+                        case "Condition":
+                            condition = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        case "Id":
+                            id = this.Core.GetAttributeIdentifierValue(sourceLineNumbers, attrib);
+                            break;
+                        case "Action":
+                            string actionValue = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            if (actionValue.Length == 0)
+                            {
+                                action = CompilerCore.IllegalInteger;
+                            }
+                            else
+                            {
+                                switch (actionValue)
+                                {
+                                    case "removeOnInstall":
+                                        action = (int)WixRemoveRegistryKeyExOn.Install;
+                                        break;
+                                    case "removeOnUninstall":
+                                        action = (int)WixRemoveRegistryKeyExOn.Uninstall;
+                                        break;
+                                    default:
+                                        this.Core.OnMessage(WixErrors.IllegalAttributeValue(sourceLineNumbers, node.Name, "Action", actionValue, "removeOnInstall", "removeOnUninstall"));
+                                        action = CompilerCore.IllegalInteger;
+                                        break;
+                                }
+                            }
+                            break;
+                        case "Root":
+                            root = this.Core.GetAttributeMsidbRegistryRootValue(sourceLineNumbers, attrib, false);
+                            break;
+                        case "Key":
+                            key = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        default:
+                            this.Core.UnexpectedAttribute(sourceLineNumbers, attrib);
+                            break;
+                    }
+                }
+                else
+                {
+                    this.Core.UnsupportedExtensionAttribute(sourceLineNumbers, attrib);
+                }
+            }
+
+            if (CompilerCore.IntegerNotSet == root)
+            {
+                this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.Name, "Root"));
+            }
+
+            if (null == key)
+            {
+                this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.Name, "Key"));
+            }
+
+            if (String.IsNullOrEmpty(id))
+            {
+                id = this.Core.GenerateIdentifier("rrx", componentId, condition, root.ToString(), key, action.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            }
+
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (XmlNodeType.Element == child.NodeType)
+                {
+                    if (child.NamespaceURI == this.schema.TargetNamespace)
+                    {
+                        this.Core.UnexpectedElement(node, child);
+                    }
+                    else
+                    {
+                        this.Core.UnsupportedExtensionElement(node, child);
+                    }
+                }
+            }
+
+            if (!this.Core.EncounteredError)
+            {
+                Row row = this.Core.CreateRow(sourceLineNumbers, "WixRemoveRegistryKeyEx");
+                row[0] = id;
+                row[1] = componentId;
+                row[2] = root;
+                row[3] = key;
+                row[4] = action;
+                row[5] = condition;
+
+                this.Core.EnsureTable(sourceLineNumbers, "Registry");
+                this.Core.EnsureTable(sourceLineNumbers, "RemoveRegistry");
+                this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixRemoveRegistryKeyEx");
+            }
+        }
+
         /// <summary>
         /// Parses a RestartResource element.
         /// </summary>
