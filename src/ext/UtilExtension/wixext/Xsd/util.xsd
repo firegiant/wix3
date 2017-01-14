@@ -879,89 +879,183 @@
       <xs:attribute name="Id" type="xs:string" use="required" />
     </xs:complexType>
   </xs:element>
-  <xs:element name="RemoveFolderEx">
-      <xs:annotation>
-          <xs:appinfo>
-              <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Component" />
-              <xse:msiRef table="RemoveFile" href="http://msdn.microsoft.com/library/aa371201.aspx"/>
-              <xse:remarks>
-                <html:p>The custom action that implements RemoveFolderEx does so by writing temporary rows to the RemoveFile table
-                for each subfolder of the root folder you specify. Because it might dramatically affect Windows Installer's
-                <html:a href="http://msdn.microsoft.com/en-us/library/aa368593.aspx">File Costing</html:a>, 
-                the temporary rows must be written before the CostInitialize standard action. Unfortunately, MSI doesn't
-                create properties for the Directory hierarchy in your package until later, in the CostFinalize action.</html:p>
-                <html:p>An easy workaround for a typical use case of removing a folder during uninstall is to write the directory
-                path to the registry and to load it during uninstall. See 
-                <html:a href="http://robmensching.com/blog/posts/2010/5/2/the-wix-toolsets-remember-property-pattern">The WiX toolset's "Remember Property" pattern</html:a>
-                for an example.</html:p>
-                <html:p>If you use custom actions to set properties, ensure that they are scheduled before the WixRemoveFoldersEx custom action.</html:p>
-              </xse:remarks>
-          </xs:appinfo>
-          <xs:documentation>
-              Remove a folder and all contained files and folders if the parent component is selected for installation or removal.
-              The folder must be specified in the Property attribute as the name of a property that will have a value that resolves 
-              to the full path of the folder before the CostInitialize action. Note that Directory ids cannot be used. 
-              For more details, see the Remarks.
-          </xs:documentation>
-      </xs:annotation>
-      <xs:complexType>
-          <xs:attribute name="Id" type="xs:string">
-              <xs:annotation>
-                  <xs:documentation>Primary key used to identify this particular entry. If this is not specified, a stable identifier
-                  will be generated at compile time based on the other attributes.</xs:documentation>
-              </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="Property" type="xs:string">
-              <xs:annotation>
-                  <xs:documentation>
-                      The id of a property that resolves to the full path of the source directory.  The property does not have
-                      to exist in the installer database at creation time; it could be created at installation time by a custom
-                      action, on the command line, etc. The property value can contain environment variables surrounded by 
-                      percent signs such as from a REG_EXPAND_SZ registry value; environment variables will be expanded before 
-                      being evaluated for a full path.
-                  </xs:documentation>
-              </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="Condition" type="xs:string">
-              <xs:annotation>
-                  <xs:documentation>Condition for evaluating the removal. If this evaluates to false, the removal is not executed at all.</xs:documentation>
-              </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="On">
-              <xs:annotation>
-                  <xs:documentation>
-                      This value determines when the folder may be removed.
-                  </xs:documentation>
-              </xs:annotation>
-              <xs:simpleType>
-                  <xs:restriction base="xs:NMTOKEN">
-                      <xs:enumeration value="install">
-                          <xs:annotation>
-                              <xs:documentation>
-                                  Removes the folder only when the parent component is being installed (msiInstallStateLocal or msiInstallStateSource).
-                              </xs:documentation>
-                          </xs:annotation>
-                      </xs:enumeration>
-                      <xs:enumeration value="uninstall">
-                          <xs:annotation>
-                              <xs:documentation>
-                                  Default: Removes the folder only when the parent component is being removed (msiInstallStateAbsent).
-                              </xs:documentation>
-                          </xs:annotation>
-                      </xs:enumeration>
-                      <xs:enumeration value="both">
-                          <xs:annotation>
-                              <xs:documentation>
-                                  Removes the folder when the parent component is being installed or removed.
-                              </xs:documentation>
-                          </xs:annotation>
-                      </xs:enumeration>
-                  </xs:restriction>
-              </xs:simpleType>
-          </xs:attribute>
-      </xs:complexType>
-  </xs:element>
-  <xs:element name="RestartResource">
+    <xs:element name="RemoveFolderEx">
+        <xs:annotation>
+            <xs:appinfo>
+                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Component" />
+                <xse:msiRef table="RemoveFile" href="http://msdn.microsoft.com/library/aa371201.aspx"/>
+                <xse:remarks>
+                    <html:p>
+                        The custom action that implements RemoveFolderEx does so by writing temporary rows to the RemoveFile table
+                        for each subfolder of the root folder you specify. Because it might dramatically affect Windows Installer's
+                        <html:a href="http://msdn.microsoft.com/en-us/library/aa368593.aspx">File Costing</html:a>,
+                        the temporary rows must be written before the CostInitialize standard action. Unfortunately, MSI doesn't
+                        create properties for the Directory hierarchy in your package until later, in the CostFinalize action.
+                    </html:p>
+                    <html:p>
+                        An easy workaround for a typical use case of removing a folder during uninstall is to write the directory
+                        path to the registry and to load it during uninstall. See
+                        <html:a href="http://robmensching.com/blog/posts/2010/5/2/the-wix-toolsets-remember-property-pattern">The WiX toolset's "Remember Property" pattern</html:a>
+                        for an example.
+                    </html:p>
+                    <html:p>If you use custom actions to set properties, ensure that they are scheduled before the WixRemoveFoldersEx custom action.</html:p>
+                </xse:remarks>
+            </xs:appinfo>
+            <xs:documentation>
+                Remove a folder and all contained files and folders if the parent component is selected for installation or removal.
+                The folder must be specified in the Property attribute as the name of a property that will have a value that resolves
+                to the full path of the folder before the CostInitialize action. Note that Directory ids cannot be used.
+                For more details, see the Remarks.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:attribute name="Id" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Primary key used to identify this particular entry. If this is not specified, a stable identifier
+                        will be generated at compile time based on the other attributes.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Property" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        The id of a property that resolves to the full path of the source directory.  The property does not have
+                        to exist in the installer database at creation time; it could be created at installation time by a custom
+                        action, on the command line, etc. The property value can contain environment variables surrounded by
+                        percent signs such as from a REG_EXPAND_SZ registry value; environment variables will be expanded before
+                        being evaluated for a full path.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Condition" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Condition for evaluating the removal. If this evaluates to false, the removal is not executed at all.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="On">
+                <xs:annotation>
+                    <xs:documentation>
+                        This value determines when the folder may be removed.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                    <xs:restriction base="xs:NMTOKEN">
+                        <xs:enumeration value="install">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Removes the folder only when the parent component is being installed (msiInstallStateLocal or msiInstallStateSource).
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="uninstall">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Default: Removes the folder only when the parent component is being removed (msiInstallStateAbsent).
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="both">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Removes the folder when the parent component is being installed or removed.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="RemoveRegistryKeyEx">
+        <xs:annotation>
+            <xs:appinfo>
+                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Component" />
+                <xse:msiRef table="RemoveRegistry" href="http://msdn.microsoft.com/library/aa371208.aspx"/>
+            </xs:appinfo>
+            <xs:documentation>
+                Remove a registry key and all contained keys and values if the parent component is selected for installation or removal.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:attribute name="Id" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Primary key used to identify this particular entry. If this is not specified, a stable identifier
+                        will be generated at compile time based on the other attributes. If specified, it must not be the
+                        same as any id in the Registry or RemoveRegistry tables.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Condition" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Condition for evaluating the removal. If this evaluates to false, the removal is not executed at all.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Action">
+                <xs:annotation>
+                    <xs:documentation>
+                        This is the action that will be taken for this registry value.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                    <xs:restriction base="xs:NMTOKEN">
+                        <xs:enumeration value="removeOnInstall">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Removes a key with all its values and subkeys when the parent component is installed.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="removeOnUninstall">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Removes a key with all its values and subkeys when the parent component is uninstalled.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Key" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        The localizable key for the registry key.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Root" use="required">
+                <xs:annotation>
+                    <xs:documentation>Registry root hive to search under.</xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                    <xs:restriction base="xs:NMTOKEN">
+                        <xs:enumeration value="HKLM">
+                            <xs:annotation>
+                                <xs:documentation>HKEY_LOCAL_MACHINE</xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="HKCU">
+                            <xs:annotation>
+                                <xs:documentation>HKEY_CURRENT_USER</xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="HKCR">
+                            <xs:annotation>
+                                <xs:documentation>HKEY_CLASSES_ROOT</xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                        <xs:enumeration value="HKU">
+                            <xs:annotation>
+                                <xs:documentation>HKEY_USERS</xs:documentation>
+                            </xs:annotation>
+                        </xs:enumeration>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="RestartResource">
     <xs:annotation>
       <xs:documentation>Registers a resource with the Restart Manager.</xs:documentation>
       <xs:appinfo>
