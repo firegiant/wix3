@@ -13,8 +13,9 @@
 
     <WixTasksPath Condition=" '$(WixTasksPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\..\WiX Toolset v3.11\bin\WixTasks.dll</WixTasksPath>
     <WixTasksPath Condition=" '$(WixTasksPath)' == '' ">$(MSBuildExtensionsPath)\..\WiX Toolset v3.11\bin\WixTasks.dll</WixTasksPath>
-    <!-- This is a fallback in case using the relative paths above did not work. -->
+    <!-- These are fallbacks in case using the relative paths above did not work. -->
     <WixTasksPath Condition=" !Exists('$(WixTasksPath)') ">$(MSBuildProgramFiles32)\WiX Toolset v3.11\bin\WixTasks.dll</WixTasksPath>
+    <WixTasksPath Condition=" !Exists('$(WixTasksPath)') ">$(MSBuildProgramFiles32)\WiX Toolset v3.10\bin\WixTasks.dll</WixTasksPath>
 
     <TargetCAFileName Condition=" '$(TargetCAFileName)' == '' ">$(TargetName).CA$(TargetExt)</TargetCAFileName>
   </PropertyGroup>
@@ -81,7 +82,7 @@
     </CreateProperty>
 
   </Target>
-  
+
   <!--
   ==================================================================================================
   PackCustomAction
@@ -93,7 +94,7 @@
     @(IntermediateAssembly) - Managed custom action assembly.
     @(Content) - Project items of type Content will be included in the package.
     $(CustomActionContents) - Optional space-delimited list of additional files to include.
-    
+
     [OUT]
     $(IntermediateOutputPath)$(TargetCAFileName) - Managed custom action package with unmanaged stub.
   ==================================================================================================
@@ -114,26 +115,26 @@
      Condition=" '%(ReferenceComWrappersToCopyLocal.extension)' == '.dll' or '%(ReferenceComWrappersToCopyLocal.extension)' == '.exe' ">
       <Output TaskParameter="Include" ItemName="CustomActionReferenceContents"/>
     </CreateItem>
-	
+
 	<!-- include PDBs for Debug only -->
 	<CreateItem
 	 Include="@(IntermediateAssembly->'%(RootDir)%(Directory)%(Filename).pdb')"
 	 Condition=" Exists('%(RootDir)%(Directory)%(Filename).pdb') and '$(Configuration)' == 'Debug' ">
 	  <Output TaskParameter="Include" ItemName="CustomActionReferenceContents"/>
 	</CreateItem>
-	
+
 	<CreateItem
 	 Include="@(ReferenceCopyLocalPaths)"
 	 Condition=" '%(ReferenceCopyLocalPaths.extension)' == '.pdb' and '$(Configuration)' == 'Debug' ">
 	  <Output TaskParameter="Include" ItemName="CustomActionReferenceContents"/>
 	</CreateItem>
-	
+
 	<CreateItem
      Include="@(ReferenceComWrappersToCopyLocal)"
      Condition=" '%(ReferenceComWrappersToCopyLocal.extension)' == '.pdb' and '$(Configuration)' == 'Debug' ">
       <Output TaskParameter="Include" ItemName="CustomActionReferenceContents"/>
     </CreateItem>
-	
+
     <!--
   Items to include in the CA package:
      - Reference assemblies marked CopyLocal
@@ -155,7 +156,7 @@
     <!-- Run the MakeSfxCA.exe CA packaging tool. -->
     <Exec Command='"$(MakeSfxCA)" "@(IntermediateCAPackage)" "$(SfxCADll)" "@(IntermediateCAAssembly)" "$(CustomActionContents)"'
      WorkingDirectory="$(ProjectDir)" />
-  
+
     <!-- Add modules to be copied to output dir. -->
     <CreateItem Include="@(AddModules);@(IntermediateCAPackage)">
     <Output TaskParameter="Include" ItemName="AddModules" />
