@@ -21,6 +21,7 @@
     <WixCATargetsPath Condition=" !Exists('$(WixCATargetsPath)') ">$(MSBuildProgramFiles32)\MSBuild\Microsoft\WiX\v3.x\wix.ca.targets</WixCATargetsPath>
 
     <WixTasksPath Condition=" !Exists('$(WixTasksPath)') ">$(MSBuildProgramFiles32)\WiX Toolset v3.11\bin\WixTasks.dll</WixTasksPath>
+    <WixTasksPath Condition=" !Exists('$(WixTasksPath)') ">$(MSBuildProgramFiles32)\WiX Toolset v3.10\bin\WixTasks.dll</WixTasksPath>
   </PropertyGroup>
 
   <UsingTask TaskName="ReadRegistry" AssemblyFile="$(WixTasksPath)"/>
