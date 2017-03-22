@@ -12,6 +12,7 @@ struct SPLASHSCREEN_INFO
     HBITMAP hBitmap;
     POINT pt;
     SIZE size;
+    SIZE bmpsize;
 };
 
 struct SPLASHSCREEN_CONTEXT
@@ -207,7 +208,7 @@ static LRESULT CALLBACK WndProc(
         HDC hdc = reinterpret_cast<HDC>(wParam);
         HDC hdcMem = ::CreateCompatibleDC(hdc);
         HBITMAP hDefaultBitmap = static_cast<HBITMAP>(::SelectObject(hdcMem, pImage->hBitmap));
-        ::StretchBlt(hdc, 0, 0, pImage->size.cx, pImage->size.cy, hdcMem, 0, 0, pImage->size.cx, pImage->size.cy, SRCCOPY);
+        ::StretchBlt(hdc, 0, 0, pImage->size.cx, pImage->size.cy, hdcMem, 0, 0, pImage->bmpsize.cx, pImage->bmpsize.cy, SRCCOPY);
         ::SelectObject(hdcMem, hDefaultBitmap);
         ::DeleteDC(hdcMem);
         }
@@ -226,7 +227,7 @@ static HRESULT LoadSplashScreen(
     BITMAP bmp = { };
     POINT ptCursor = { };
     HMONITOR hMonitor = NULL;
-    MONITORINFO mi = { };
+    MONITORINFOEXW mi = { };
 
     pSplashScreen->hBitmap = ::LoadBitmapW(hInstance, MAKEINTRESOURCEW(IDB_SPLASHSCREEN));
     ExitOnNullWithLastError(pSplashScreen->hBitmap, hr, "Failed to load splash screen bitmap.");
@@ -234,6 +235,8 @@ static HRESULT LoadSplashScreen(
     ::GetObject(pSplashScreen->hBitmap, sizeof(bmp), static_cast<void*>(&bmp));
     pSplashScreen->pt.x = CW_USEDEFAULT;
     pSplashScreen->pt.y = CW_USEDEFAULT;
+    pSplashScreen->bmpsize.cx = bmp.bmWidth;
+    pSplashScreen->bmpsize.cy = bmp.bmHeight;
     pSplashScreen->size.cx = bmp.bmWidth;
     pSplashScreen->size.cy = bmp.bmHeight;
 
@@ -243,9 +246,23 @@ static HRESULT LoadSplashScreen(
         hMonitor = ::MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
         if (hMonitor)
         {
+            ZeroMemory(&mi, sizeof(mi));
             mi.cbSize = sizeof(mi);
+
             if (::GetMonitorInfoW(hMonitor, &mi))
             {
+                HDC hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+                if (hdc)
+                {
+                    UINT dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                    UINT dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+
+                    pSplashScreen->size.cx = pSplashScreen->size.cx * dpiX / 96;
+                    pSplashScreen->size.cy = pSplashScreen->size.cy * dpiY / 96;
+
+                    ::DeleteDC(hdc);
+                }
+
                 pSplashScreen->pt.x = mi.rcWork.left + (mi.rcWork.right  - mi.rcWork.left - pSplashScreen->size.cx) / 2;
                 pSplashScreen->pt.y = mi.rcWork.top  + (mi.rcWork.bottom - mi.rcWork.top  - pSplashScreen->size.cy) / 2;
             }
