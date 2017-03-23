@@ -33,6 +33,7 @@ extern "C" HRESULT LoggingOpen(
 {
     HRESULT hr = S_OK;
     LPWSTR sczLoggingBaseFolder = NULL;
+    LPWSTR sczFormattedPrefix = NULL;
 
     // Check if the logging policy is set and configure the logging appropriately.
     CheckLoggingPolicy(&pLog->dwAttributes);
@@ -108,8 +109,11 @@ extern "C" HRESULT LoggingOpen(
         hr = GetNonSessionSpecificTempFolder(&sczLoggingBaseFolder);
         ExitOnFailure(hr, "Failed to get non-session specific TEMP folder.");
 
+        // don't fail if formatting fails for some reason
+        VariableFormatString(pVariables, pLog->sczPrefix, &sczFormattedPrefix, NULL);
+
         // Best effort to open default logging.
-        hr = LogOpen(sczLoggingBaseFolder, pLog->sczPrefix, NULL, pLog->sczExtension, FALSE, FALSE, &pLog->sczPath);
+        hr = LogOpen(sczLoggingBaseFolder, sczFormattedPrefix ? sczFormattedPrefix : pLog->sczPrefix, NULL, pLog->sczExtension, FALSE, FALSE, &pLog->sczPath);
         if (FAILED(hr))
         {
             LogDisable();
@@ -154,6 +158,7 @@ extern "C" HRESULT LoggingOpen(
     }
 
 LExit:
+    ReleaseStr(sczFormattedPrefix);
     ReleaseStr(sczLoggingBaseFolder);
 
     return hr;
