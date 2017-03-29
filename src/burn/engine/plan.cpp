@@ -297,6 +297,7 @@ extern "C" HRESULT PlanDefaultPackageRequestState(
     __in BOOTSTRAPPER_ACTION action,
     __in BURN_VARIABLES* pVariables,
     __in_z_opt LPCWSTR wzInstallCondition,
+    __in_z_opt LPCWSTR wzRepairCondition,
     __in BOOTSTRAPPER_RELATION_TYPE relationType,
     __out BOOTSTRAPPER_REQUEST_STATE* pRequestState
     )
@@ -339,14 +340,36 @@ extern "C" HRESULT PlanDefaultPackageRequestState(
         hr = GetActionDefaultRequestState(action, fPermanent, currentState, &defaultRequestState);
         ExitOnFailure(hr, "Failed to get default request state for action.");
 
-        // If there is an install condition (and we're doing an install) evaluate the condition
-        // to determine whether to use the default request state or make the package absent.
-        if (BOOTSTRAPPER_ACTION_UNINSTALL != action && wzInstallCondition && *wzInstallCondition)
+        // If we're not doing an uninstall, evaluate action conditions to override the default
+        // request state.
+        if (BOOTSTRAPPER_ACTION_UNINSTALL != action)
         {
-            hr = ConditionEvaluate(pVariables, wzInstallCondition, &fCondition);
-            ExitOnFailure(hr, "Failed to evaluate install condition.");
+            BOOTSTRAPPER_REQUEST_STATE requestState = defaultRequestState;
 
-            *pRequestState = fCondition ? defaultRequestState : BOOTSTRAPPER_REQUEST_STATE_ABSENT;
+            if (wzInstallCondition && *wzInstallCondition)
+            {
+                hr = ConditionEvaluate(pVariables, wzInstallCondition, &fCondition);
+                ExitOnFailure(hr, "Failed to evaluate install condition.");
+
+                if (!fCondition)
+                {
+                    requestState = BOOTSTRAPPER_REQUEST_STATE_ABSENT;
+                }
+            }
+
+            // If the install condition was false, stick with that.
+            if (BOOTSTRAPPER_REQUEST_STATE_ABSENT != requestState && wzRepairCondition && *wzRepairCondition)
+            {
+                hr = ConditionEvaluate(pVariables, wzRepairCondition, &fCondition);
+                ExitOnFailure(hr, "Failed to evaluate repair condition.");
+
+                if (fCondition)
+                {
+                    requestState = BOOTSTRAPPER_REQUEST_STATE_REPAIR;
+                }
+            }
+
+            *pRequestState = requestState;
         }
         else // just set the package to the default request state.
         {
@@ -839,7 +862,7 @@ static HRESULT ProcessPackage(
     BURN_ROLLBACK_BOUNDARY* pEffectiveRollbackBoundary = NULL;
 
     // Remember the default requested state so the engine doesn't get blamed for planning the wrong thing if the UX changes it.
-    hr = PlanDefaultPackageRequestState(pPackage->type, pPackage->currentState, !pPackage->fUninstallable, pPlan->action, pVariables, pPackage->sczInstallCondition, relationType, &pPackage->defaultRequested);
+    hr = PlanDefaultPackageRequestState(pPackage->type, pPackage->currentState, !pPackage->fUninstallable, pPlan->action, pVariables, pPackage->sczInstallCondition, pPackage->sczRepairCondition, relationType, &pPackage->defaultRequested);
     ExitOnFailure(hr, "Failed to set default package state.");
 
     pPackage->requested = pPackage->defaultRequested;
