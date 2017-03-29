@@ -357,9 +357,10 @@ HRESULT PlanDefaultPackageRequestState(
     __in BOOTSTRAPPER_ACTION action,
     __in BURN_VARIABLES* pVariables,
     __in_z_opt LPCWSTR wzInstallCondition,
+    __in_z_opt LPCWSTR wzRepairCondition,
     __in BOOTSTRAPPER_RELATION_TYPE relationType,
     __out BOOTSTRAPPER_REQUEST_STATE* pRequestState
-    );
+);
 HRESULT PlanLayoutBundle(
     __in BURN_PLAN* pPlan,
     __in_z LPCWSTR wzExecutableName,

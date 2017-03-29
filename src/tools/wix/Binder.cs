@@ -4570,6 +4570,11 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         writer.WriteAttributeString("InstallCondition", package.InstallCondition);
                     }
 
+                    if (!String.IsNullOrEmpty(package.RepairCondition))
+                    {
+                        writer.WriteAttributeString("RepairCondition", package.RepairCondition);
+                    }
+
                     if (Compiler.ChainPackageType.Exe == package.ChainPackageType)
                     {
                         writer.WriteAttributeString("DetectCondition", package.DetectCondition);
