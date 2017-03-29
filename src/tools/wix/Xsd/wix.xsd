@@ -913,6 +913,14 @@
         <xs:documentation>A condition to evaluate before installing the package. The package will only be installed if the condition evaluates to true. If the condition evaluates to false and the bundle is being installed, repaired, or modified, the package will be uninstalled.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="RepairCondition" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+        A condition to request that an MSI, MSP, or Exe package be repaired when the bundle is being installed, repaired, or modified.
+        If the condition is omitted or evaluates to false, the package will get its default behavior.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="Cache" type="YesNoAlwaysTypeUnion">
       <xs:annotation>
         <xs:documentation>Whether to cache the package. The default is "yes".</xs:documentation>

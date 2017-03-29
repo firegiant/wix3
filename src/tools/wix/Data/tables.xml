@@ -1724,6 +1724,7 @@
         <columnDefinition name="EnableFeatureSelection" type="number" length="2" nullable="yes" minValue="0" maxValue="1" />
         <columnDefinition name="ForcePerMachine" type="number" length="2" nullable="yes" minValue="0" maxValue="1" />
         <columnDefinition name="DisplayInternalUI" type="number" length="2" nullable="yes" minValue="0" maxValue="1" />
+        <columnDefinition name="RepairCondition" type="string" length="0" nullable="yes"/>
     </tableDefinition>
     <tableDefinition name="ChainPackageInfo" createSymbols="yes" unreal="yes">
         <columnDefinition name="Id" type="string" length="0" category="identifier" primaryKey="yes"/>
@@ -1759,6 +1760,7 @@
         <columnDefinition name="PatchCode" type="string" length="38" category="guid" nullable="yes" />
         <columnDefinition name="PatchXml" type="string" length="0" nullable="yes" />
         <columnDefinition name="Manufacturer" type="string" length="0" nullable="yes" />
+        <columnDefinition name="RepairCondition" type="string" length="0" nullable="yes"/>
     </tableDefinition>
     <tableDefinition name="ChainMsiPackage" createSymbols="yes" unreal="yes">
         <columnDefinition name="ChainPackage_" type="string" length="0" category="identifier" primaryKey="yes"

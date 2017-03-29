@@ -21442,6 +21442,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             string id = null;
             string after = null;
             string installCondition = null;
+            string repairCondition = null;
             YesNoAlwaysType cache = YesNoAlwaysType.NotSet;
             string cacheId = null;
             string description = null;
@@ -21592,6 +21593,10 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         case "Slipstream":
                             slipstream = this.core.GetAttributeYesNoValue(sourceLineNumbers, attrib);
                             allowed = (packageType == ChainPackageType.Msp);
+                            break;
+                        case "RepairCondition":
+                            repairCondition = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            allowed = (packageType == ChainPackageType.Exe || packageType == ChainPackageType.Msi || packageType == ChainPackageType.Msp);
                             break;
                         default:
                             allowed = false;
@@ -21909,6 +21914,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 {
                     row[22] = (YesNoType.Yes == displayInternalUI) ? 1 : 0;
                 }
+
+                row[23] = repairCondition;
 
                 this.CreateChainPackageMetaRows(sourceLineNumbers, parentType, parentId, ComplexReferenceChildType.Package, id, previousType, previousId, after);
             }

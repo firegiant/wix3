@@ -170,6 +170,7 @@ typedef struct _BURN_PACKAGE
 
     LPWSTR sczInstallCondition;
     LPWSTR sczRollbackInstallCondition;
+    LPWSTR sczRepairCondition;
     BOOL fPerMachine;
     BOOL fUninstallable;
     BOOL fVital;
