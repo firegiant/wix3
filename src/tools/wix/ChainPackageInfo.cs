@@ -51,6 +51,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             object enableFeatureSelectionData = chainPackageRow[20];
             object forcePerMachineData = chainPackageRow[21];
             object displayInternalUIData = chainPackageRow[22];
+            string repairCondition = (string)chainPackageRow[23];
 
             BundlePackageAttributes attributes = (null == attributesData) ? 0 : (BundlePackageAttributes)attributesData;
 
@@ -133,6 +134,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             this.PackagePayload = packagePayload;
             this.InstallCondition = installCondition;
             this.InstallCommand = installCommand;
+            this.RepairCondition = repairCondition;
             this.RepairCommand = repairCommand;
             this.UninstallCommand = uninstallCommand;
 
@@ -549,6 +551,12 @@ namespace Microsoft.Tools.WindowsInstallerXml
         {
             get { return (string)this.Fields[31].Data; }
             private set { this.Fields[31].Data = value; }
+        }
+
+        public string RepairCondition
+        {
+            get { return (string)this.Fields[32].Data; }
+            private set { this.Fields[32].Data = value; }
         }
 
         public long Size { get; private set; }
