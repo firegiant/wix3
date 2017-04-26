@@ -353,7 +353,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Bootstrapper
         /// <param name="hwndParent">The parent window of the elevation dialog (if the engine hasn't elevated yet).</param>
         /// <param name="approvedExeForElevationId">Id of the ApprovedExeForElevation element specified when the bundle was authored.</param>
         /// <param name="arguments">Optional arguments.</param>
-		/// <param name="waitForInputIdleTimeout">Timeout in milliseconds. When set to something other than zero, the engine will call WaitForInputIdle for the new process with this timeout before calling OnLaunchApprovedExeComplete.</param>
+        /// <param name="waitForInputIdleTimeout">Timeout in milliseconds. When set to something other than zero, the engine will call WaitForInputIdle for the new process with this timeout before calling OnLaunchApprovedExeComplete.</param>
         public void LaunchApprovedExe(IntPtr hwndParent, string approvedExeForElevationId, string arguments, int waitForInputIdleTimeout)
         {
             engine.LaunchApprovedExe(hwndParent, approvedExeForElevationId, arguments, waitForInputIdleTimeout);
@@ -413,6 +413,17 @@ namespace Microsoft.Tools.WindowsInstallerXml.Bootstrapper
         public void SetDownloadSource(string packageOrContainerId, string payloadId, string url, string user, string password)
         {
             this.engine.SetDownloadSource(packageOrContainerId, payloadId, url, user, password);
+        }
+
+        /// <summary>
+        /// Set the new download URL for the bundle update feed.
+        /// </summary>
+        /// <param name="url">The new url.</param>
+        /// <param name="user">The user name for proxy authentication.</param>
+        /// <param name="password">The password for proxy authentication.</param>
+        public void SetUpdateSource(string url, string user, string password)
+        {
+            this.engine.SetUpdateSource(url, user, password);
         }
 
         /// <summary>
