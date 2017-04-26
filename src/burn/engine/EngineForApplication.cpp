@@ -742,7 +742,7 @@ public: // IBootstrapperEngine
         __in_z LPCWSTR wzApprovedExeForElevationId,
         __in_z_opt LPCWSTR wzArguments,
         __in DWORD dwWaitForInputIdleTimeout
-        )
+    )
     {
         HRESULT hr = S_OK;
         BURN_APPROVED_EXE* pApprovedExe = NULL;
@@ -793,6 +793,34 @@ public: // IBootstrapperEngine
         {
             ApprovedExesUninitializeLaunch(pLaunchApprovedExe);
         }
+
+        return hr;
+    }
+
+    virtual STDMETHODIMP SetUpdateSource(
+        __in_z LPCWSTR wzUrl,
+        __in_z_opt LPWSTR /*wzUser*/,
+        __in_z_opt LPWSTR /*wzPassword*/
+    )
+    {
+        HRESULT hr = S_OK;
+
+        ::EnterCriticalSection(&m_pEngineState->csActive);
+        UserExperienceDeactivateEngine(&m_pEngineState->userExperience);
+
+        if (wzUrl && *wzUrl)
+        {
+            hr = StrAllocString(&m_pEngineState->update.sczUpdateSource, wzUrl, 0);
+            ExitOnFailure(hr, "Failed to set feed download URL.");
+        }
+        else // no URL provided means clear out the whole download source.
+        {
+            ReleaseNullStr(m_pEngineState->update.sczUpdateSource);
+        }
+
+    LExit:
+        UserExperienceActivateEngine(&m_pEngineState->userExperience, NULL);
+        ::LeaveCriticalSection(&m_pEngineState->csActive);
 
         return hr;
     }

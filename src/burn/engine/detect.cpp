@@ -219,6 +219,7 @@ extern "C" HRESULT DetectUpdate(
     HRESULT hr = S_OK;
     int nResult = IDNOACTION;
     BOOL fBeginCalled = FALSE;
+    LPWSTR sczOriginalSource = NULL;
 
     // If no update source was specified, skip update detection.
     if (!pUpdate->sczUpdateSource || !*pUpdate->sczUpdateSource)
@@ -228,7 +229,10 @@ extern "C" HRESULT DetectUpdate(
 
     fBeginCalled = TRUE;
 
-    nResult = pUX->pUserExperience->OnDetectUpdateBegin(pUpdate->sczUpdateSource, IDNOACTION);
+    hr = StrAllocString(&sczOriginalSource, pUpdate->sczUpdateSource, 0);
+    ExitOnFailure(hr, "Failed to duplicate update feed source.");
+
+    nResult = pUX->pUserExperience->OnDetectUpdateBegin(sczOriginalSource, IDNOACTION);
     hr = UserExperienceInterpretResult(pUX, MB_OKCANCEL, nResult);
     ExitOnRootFailure(hr, "UX aborted detect update begin.");
 
@@ -243,6 +247,8 @@ extern "C" HRESULT DetectUpdate(
     }
 
 LExit:
+    ReleaseStr(sczOriginalSource);
+
     if (fBeginCalled)
     {
         pUX->pUserExperience->OnDetectUpdateComplete(hr, pUpdate->fUpdateAvailable ? pUpdate->sczUpdateSource : NULL);
