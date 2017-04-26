@@ -143,6 +143,12 @@ namespace Microsoft.Tools.WindowsInstallerXml.Bootstrapper
             [MarshalAs(UnmanagedType.LPWStr)] string wzArguments,
             [MarshalAs(UnmanagedType.U4)] int dwWaitForInputIdleTimeout
             );
+
+        void SetUpdateSource(
+            [MarshalAs(UnmanagedType.LPWStr)] string wzUrl,
+            [MarshalAs(UnmanagedType.LPWStr)] string wzUser,
+            [MarshalAs(UnmanagedType.LPWStr)] string wzPassword
+            );
     }
 
     /// <summary>
