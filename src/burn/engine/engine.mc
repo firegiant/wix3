@@ -244,7 +244,7 @@ MessageId=152
 Severity=Error
 SymbolicName=MSG_FAILED_READ_RELATED_PACKAGE_LANGUAGE
 Language=English
-Detected related package: %2!ls!, but failed to read language: %3!hs!, error: 0x%1!x!
+Detected related package: %2!ls!, but failed to read language: %3!ls!, error: 0x%1!ls!
 .
 
 MessageId=170
