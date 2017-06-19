@@ -71,6 +71,9 @@
     <DisableSpecificCompilerWarnings>4091;4564;4800</DisableSpecificCompilerWarnings>
     <LinkDelaySign>$(DelaySign)</LinkDelaySign>
     <LinkKeyFile>$(AssemblyOriginatorKeyFile)</LinkKeyFile>
+    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)'=='' ">v4.5</TargetFrameworkVersion>
+    <PlatformToolset Condition="$(VS2015Available)">v140</PlatformToolset>
+    <PlatformToolset Condition="$(VS2017Available)">v141</PlatformToolset>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'=='' AND '$(VisualStudioVersion)'>='15.0'">
