@@ -34,10 +34,12 @@
     <Reference Include="System.Xml" />
     <ProjectReference Include="..\..\..\tools\Wix\Wix.csproj" />
     <ProjectReference Include="..\wixlib\DIFxAppExtension.wixproj">
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
       <Properties>Platform=x86</Properties>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\wixlib\DIFxAppExtension.wixproj">
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
       <Properties>Platform=x64</Properties>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

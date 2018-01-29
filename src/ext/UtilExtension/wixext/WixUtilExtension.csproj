@@ -58,6 +58,7 @@
     <Reference Include="System.Xml" />
     <ProjectReference Include="..\..\..\tools\Wix\Wix.csproj" />
     <ProjectReference Include="..\wixlib\UtilExtension.wixproj">
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
