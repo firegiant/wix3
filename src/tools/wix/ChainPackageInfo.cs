@@ -154,6 +154,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             this.RollbackLogPathVariable = rollbackPathVariable;
 
             this.DisplayInternalUI = (YesNoType.Yes == displayInternalUI);
+            this.EnableFeatureSelection = (YesNoType.Yes == enableFeatureSelection);
 
             this.Payloads = new List<PayloadInfoRow>();
             this.RelatedPackages = new List<RelatedPackage>();
@@ -766,8 +767,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         }
                     }
 
-                    // If feature selection is enabled, represent the Feature table in the manifest.
-                    if (YesNoType.Yes == enableFeatureSelection && db.Tables.Contains("Feature"))
+                    // Represent the Feature table in the manifest.
+                    if (db.Tables.Contains("Feature"))
                     {
                         using (Microsoft.Deployment.WindowsInstaller.View featureView = db.OpenView("SELECT `Component_` FROM `FeatureComponents` WHERE `Feature_` = ?"),
                                     componentView = db.OpenView("SELECT `FileSize` FROM `File` WHERE `Component_` = ?"))

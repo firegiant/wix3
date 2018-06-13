@@ -1842,6 +1842,7 @@
         <columnDefinition name="Version" type="string" length="0" nullable="yes"/>
         <columnDefinition name="InstallCondition" type="string" length="0" nullable="yes" />
         <columnDefinition name="Cache" type="string" length="0" nullable="yes" minValue="0" maxValue="2" />
+        <columnDefinition name="EnableFeatureSelection" type="string" length="0" nullable="yes"/>
     </tableDefinition>
     <tableDefinition name="WixPayloadProperties" unreal="yes" bootstrapperApplicationData="yes">
         <columnDefinition name="Payload"  type="string" length="0" category="identifier" primaryKey="yes" />

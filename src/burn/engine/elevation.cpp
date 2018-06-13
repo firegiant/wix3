@@ -741,10 +741,13 @@ extern "C" HRESULT ElevationExecuteMsiPackage(
     ExitOnFailure(hr, "Failed to write action to message buffer.");
 
     // Feature actions.
-    for (DWORD i = 0; i < pExecuteAction->msiPackage.pPackage->Msi.cFeatures; ++i)
+    if (pExecuteAction->msiPackage.pPackage->Msi.fEnableFeatureSelection)
     {
-        hr = BuffWriteNumber(&pbData, &cbData, (DWORD)pExecuteAction->msiPackage.rgFeatures[i]);
-        ExitOnFailure(hr, "Failed to write feature action to message buffer.");
+        for (DWORD i = 0; i < pExecuteAction->msiPackage.pPackage->Msi.cFeatures; ++i)
+        {
+            hr = BuffWriteNumber(&pbData, &cbData, (DWORD)pExecuteAction->msiPackage.rgFeatures[i]);
+            ExitOnFailure(hr, "Failed to write feature action to message buffer.");
+        }
     }
 
     // Slipstream patches actions.
@@ -2099,7 +2102,7 @@ static HRESULT OnExecuteMsiPackage(
     ExitOnFailure(hr, "Failed to read action.");
 
     // Read feature actions.
-    if (executeAction.msiPackage.pPackage->Msi.cFeatures)
+    if (executeAction.msiPackage.pPackage->Msi.fEnableFeatureSelection && executeAction.msiPackage.pPackage->Msi.cFeatures)
     {
         executeAction.msiPackage.rgFeatures = (BOOTSTRAPPER_FEATURE_ACTION*)MemAlloc(executeAction.msiPackage.pPackage->Msi.cFeatures * sizeof(BOOTSTRAPPER_FEATURE_ACTION), TRUE);
         ExitOnNull(executeAction.msiPackage.rgFeatures, hr, E_OUTOFMEMORY, "Failed to allocate memory for feature actions.");

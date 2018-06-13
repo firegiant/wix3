@@ -7,6 +7,12 @@ static HRESULT ParsePackagesFromXml(
     __in BAL_INFO_PACKAGES* pPackages,
     __in IXMLDOMDocument* pixdManifest
     );
+static HRESULT ParsePackageFeaturesFromXml(
+    __in IXMLDOMDocument* pixdManifest,
+    __in LPCWSTR wzPackageId,
+    __out BAL_INFO_PACKAGE_FEATURE** ppFeatures,
+    __out DWORD* pcFeatures
+    );
 
 
 DAPI_(HRESULT) BalInfoParseFromXml(
@@ -135,6 +141,16 @@ DAPI_(void) BalInfoUninitialize(
 {
     for (DWORD i = 0; i < pBundle->packages.cPackages; ++i)
     {
+        for (DWORD j = 0; j < pBundle->packages.rgPackages[i].cFeatures; ++j)
+        {
+            ReleaseStr(pBundle->packages.rgPackages[i].rgFeatures[j].sczDescription);
+            ReleaseStr(pBundle->packages.rgPackages[i].rgFeatures[j].sczId);
+            ReleaseStr(pBundle->packages.rgPackages[i].rgFeatures[j].sczPackageId);
+            ReleaseStr(pBundle->packages.rgPackages[i].rgFeatures[j].sczParentId);
+            ReleaseStr(pBundle->packages.rgPackages[i].rgFeatures[j].sczTitle);
+        }
+        ReleaseMem(pBundle->packages.rgPackages[i].rgFeatures);
+
         ReleaseStr(pBundle->packages.rgPackages[i].sczDisplayName);
         ReleaseStr(pBundle->packages.rgPackages[i].sczDescription);
         ReleaseStr(pBundle->packages.rgPackages[i].sczId);
@@ -220,6 +236,12 @@ static HRESULT ParsePackagesFromXml(
         hr = XmlGetYesNoAttribute(pNode, L"DisplayInternalUI", &prgPackages[iPackage].fDisplayInternalUI);
         ExitOnFailure(hr, "Failed to get DisplayInternalUI setting for package.");
 
+        hr = XmlGetYesNoAttribute(pNode, L"EnableFeatureSelection", &prgPackages[iPackage].fEnableFeatureSelection);
+        if (E_NOTFOUND != hr)
+        {
+            ExitOnFailure(hr, "Failed to get EnableFeatureSelection setting for package.");
+        }
+
         hr = XmlGetAttributeEx(pNode, L"ProductCode", &prgPackages[iPackage].sczProductCode);
         if (E_NOTFOUND != hr)
         {
@@ -260,6 +282,9 @@ static HRESULT ParsePackagesFromXml(
             prgPackages[iPackage].cacheType = BAL_INFO_CACHE_TYPE_ALWAYS;
         }
 
+        hr = ParsePackageFeaturesFromXml(pixdManifest, prgPackages[iPackage].sczId, &prgPackages[iPackage].rgFeatures, &prgPackages[iPackage].cFeatures);
+        ExitOnFailure(hr, "Failed to get features for package.");
+
         ++iPackage;
         ReleaseNullObject(pNode);
     }
@@ -277,6 +302,125 @@ static HRESULT ParsePackagesFromXml(
 LExit:
     ReleaseStr(scz);
     ReleaseMem(prgPackages);
+    ReleaseObject(pNode);
+    ReleaseObject(pNodeList);
+
+    return hr;
+}
+
+
+static HRESULT ParsePackageFeaturesFromXml(
+    __in IXMLDOMDocument* pixdManifest,
+    __in LPCWSTR wzPackageId,
+    __out BAL_INFO_PACKAGE_FEATURE** ppFeatures,
+    __out DWORD* pcFeatures
+)
+{
+    HRESULT hr = S_OK;
+    IXMLDOMNodeList* pNodeList = NULL;
+    IXMLDOMNode* pNode = NULL;
+    BAL_INFO_PACKAGE_FEATURE* prgFeatures = NULL;
+    DWORD cFeatures = 0;
+    LPWSTR scz = NULL;
+
+    hr = StrAllocFormatted(&scz, L"/BootstrapperApplicationData/WixPackageFeatureInfo[@Package='%ls']", wzPackageId);
+    ExitOnFailure(hr, "Failed to allocate feature query.");
+
+    hr = XmlSelectNodes(pixdManifest, scz, &pNodeList);
+    ExitOnFailure(hr, "Failed to select all package features.");
+
+    hr = pNodeList->get_length(reinterpret_cast<long*>(&cFeatures));
+    ExitOnFailure(hr, "Failed to get the feature count.");
+
+    if (cFeatures > 0)
+    {
+        prgFeatures = static_cast<BAL_INFO_PACKAGE_FEATURE*>(MemAlloc(sizeof(BAL_INFO_PACKAGE_FEATURE) * cFeatures, TRUE));
+        ExitOnNull(prgFeatures, hr, E_OUTOFMEMORY, "Failed to allocate memory for package's features.");
+
+        DWORD iFeature = 0;
+        while (S_OK == (hr = XmlNextElement(pNodeList, &pNode, NULL)))
+        {
+            hr = XmlGetAttributeEx(pNode, L"Package", &prgFeatures[iFeature].sczPackageId);
+            ExitOnFailure(hr, "Failed to get package identifier for feature.");
+
+            hr = XmlGetAttributeEx(pNode, L"Feature", &prgFeatures[iFeature].sczId);
+            ExitOnFailure(hr, "Failed to get identifier for feature.");
+
+            hr = XmlGetAttributeNumber(pNode, L"Size", &prgFeatures[iFeature].dwSize);
+            ExitOnFailure(hr, "Failed to get size for feature.");
+
+            hr = XmlGetAttributeNumber(pNode, L"Level", &prgFeatures[iFeature].dwLevel);
+            ExitOnFailure(hr, "Failed to get level for feature.");
+
+            hr = XmlGetAttributeEx(pNode, L"Parent", &scz);
+            if (E_NOTFOUND != hr)
+            {
+                ExitOnFailure(hr, "Failed to get parent for feature.");
+
+                // Attribute is often an empty string so only set the value if it isn't.
+                if (scz && *scz)
+                {
+                    hr = StrAllocString(&prgFeatures[iFeature].sczParentId, scz, 0);
+                    ExitOnFailure(hr, "Failed to copy parent for feature.");
+                }
+            }
+
+            hr = XmlGetAttributeEx(pNode, L"Title", &scz);
+            if (E_NOTFOUND != hr)
+            {
+                ExitOnFailure(hr, "Failed to get title for feature.");
+
+                // Attribute is often an empty string so only set the value if it isn't.
+                if (scz && *scz)
+                {
+                    hr = StrAllocString(&prgFeatures[iFeature].sczTitle, scz, 0);
+                    ExitOnFailure(hr, "Failed to copy title for feature.");
+                }
+            }
+
+            hr = XmlGetAttributeEx(pNode, L"Description", &scz);
+            if (E_NOTFOUND != hr)
+            {
+                ExitOnFailure(hr, "Failed to get description for feature.");
+
+                // Attribute is often an empty string so only set the value if it isn't.
+                if (scz && *scz)
+                {
+                    hr = StrAllocString(&prgFeatures[iFeature].sczDescription, scz, 0);
+                    ExitOnFailure(hr, "Failed to copy description for feature.");
+                }
+            }
+
+            hr = XmlGetAttributeNumber(pNode, L"Display", &prgFeatures[iFeature].dwDisplay);
+            if (E_NOTFOUND != hr)
+            {
+                ExitOnFailure(hr, "Failed to get level for feature.");
+            }
+
+            hr = XmlGetAttributeNumber(pNode, L"Attributes", &prgFeatures[iFeature].dwAttributes);
+            if (E_NOTFOUND != hr)
+            {
+                ExitOnFailure(hr, "Failed to get attributes for feature.");
+            }
+
+            ++iFeature;
+            ReleaseNullObject(pNode);
+        }
+        ExitOnFailure(hr, "Failed to parse all feature info elements.");
+
+        if (S_FALSE == hr)
+        {
+            hr = S_OK;
+        }
+    }
+
+    *pcFeatures = cFeatures;
+    *ppFeatures = prgFeatures;
+    prgFeatures = NULL;
+
+LExit:
+    ReleaseStr(scz);
+    ReleaseMem(prgFeatures);
     ReleaseObject(pNode);
     ReleaseObject(pNodeList);
 

@@ -26,6 +26,20 @@ typedef enum BAL_INFO_CACHE_TYPE
 } BAL_INFO_CACHE_TYPE;
 
 
+typedef struct _BAL_INFO_PACKAGE_FEATURE
+{
+    LPWSTR sczId;
+    LPWSTR sczPackageId;
+    LPWSTR sczParentId;
+    DWORD dwSize;
+    LPWSTR sczTitle;
+    LPWSTR sczDescription;
+    DWORD dwDisplay;
+    DWORD dwLevel;
+    DWORD dwAttributes;
+} BAL_INFO_PACKAGE_FEATURE;
+
+
 typedef struct _BAL_INFO_PACKAGE
 {
     LPWSTR sczId;
@@ -35,11 +49,15 @@ typedef struct _BAL_INFO_PACKAGE
     BOOL fPermanent;
     BOOL fVital;
     BOOL fDisplayInternalUI;
+    BOOL fEnableFeatureSelection;
     LPWSTR sczProductCode;
     LPWSTR sczUpgradeCode;
     LPWSTR sczVersion;
     LPWSTR sczInstallCondition;
     BAL_INFO_CACHE_TYPE cacheType;
+
+    BAL_INFO_PACKAGE_FEATURE* rgFeatures;
+    DWORD cFeatures;
 } BAL_INFO_PACKAGE;
 
 

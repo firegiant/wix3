@@ -3987,6 +3987,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         row[17] = "always";
                         break;
                 }
+                row[18] = package.EnableFeatureSelection ? "yes" : "no";
 
                 Table wixPackageFeatureInfoTable = bundle.EnsureTable(this.core.TableDefinitions["WixPackageFeatureInfo"]);
 
@@ -4593,6 +4594,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         writer.WriteAttributeString("Language", package.Language);
                         writer.WriteAttributeString("Version", package.Version);
                         writer.WriteAttributeString("DisplayInternalUI", package.DisplayInternalUI ? "yes" : "no");
+                        writer.WriteAttributeString("EnableFeatureSelection", package.EnableFeatureSelection ? "yes" : "no");
                     }
                     else if (Compiler.ChainPackageType.Msp == package.ChainPackageType)
                     {

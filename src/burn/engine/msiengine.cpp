@@ -83,6 +83,10 @@ extern "C" HRESULT MsiEngineParsePackageFromXml(
     hr = XmlGetYesNoAttribute(pixnMsiPackage, L"DisplayInternalUI", &pPackage->Msi.fDisplayInternalUI);
     ExitOnFailure(hr, "Failed to get @DisplayInternalUI.");
 
+    // @EnableFeatureSelection
+    hr = XmlGetYesNoAttribute(pixnMsiPackage, L"EnableFeatureSelection", &pPackage->Msi.fEnableFeatureSelection);
+    ExitOnFailure(hr, "Failed to get @EnableFeatureSelection.");
+
     // select feature nodes
     hr = XmlSelectNodes(pixnMsiPackage, L"MsiFeature", &pixnNodes);
     ExitOnFailure(hr, "Failed to select feature nodes.");
@@ -601,53 +605,50 @@ extern "C" HRESULT MsiEngineDetectPackage(
     }
 
     // detect features
-    if (pPackage->Msi.cFeatures)
+    for (DWORD i = 0; i < pPackage->Msi.cFeatures; ++i)
     {
-        for (DWORD i = 0; i < pPackage->Msi.cFeatures; ++i)
+        BURN_MSIFEATURE* pFeature = &pPackage->Msi.rgFeatures[i];
+
+        // Try to detect features state if the product is present on the machine.
+        if (BOOTSTRAPPER_PACKAGE_STATE_PRESENT <= pPackage->currentState)
         {
-            BURN_MSIFEATURE* pFeature = &pPackage->Msi.rgFeatures[i];
+            hr = WiuQueryFeatureState(pPackage->Msi.sczProductCode, pFeature->sczId, &installState);
+            ExitOnFailure(hr, "Failed to query feature state.");
 
-            // Try to detect features state if the product is present on the machine.
-            if (BOOTSTRAPPER_PACKAGE_STATE_PRESENT <= pPackage->currentState)
-            {
-                hr = WiuQueryFeatureState(pPackage->Msi.sczProductCode, pFeature->sczId, &installState);
-                ExitOnFailure(hr, "Failed to query feature state.");
-
-                if (INSTALLSTATE_UNKNOWN == installState) // in case of an upgrade a feature could be removed.
-                {
-                    installState = INSTALLSTATE_ABSENT;
-                }
-            }
-            else // MSI not installed then the features can't be either.
+            if (INSTALLSTATE_UNKNOWN == installState) // in case of an upgrade a feature could be removed.
             {
                 installState = INSTALLSTATE_ABSENT;
             }
-
-            // set current state
-            switch (installState)
-            {
-            case INSTALLSTATE_ABSENT:
-                pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_ABSENT;
-                break;
-            case INSTALLSTATE_ADVERTISED:
-                pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_ADVERTISED;
-                break;
-            case INSTALLSTATE_LOCAL:
-                pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_LOCAL;
-                break;
-            case INSTALLSTATE_SOURCE:
-                pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_SOURCE;
-                break;
-            default:
-                hr = E_UNEXPECTED;
-                ExitOnRootFailure(hr, "Invalid state value.");
-            }
-
-            // pass to UX
-            nResult = pUserExperience->pUserExperience->OnDetectMsiFeature(pPackage->sczId, pFeature->sczId, pFeature->currentState);
-            hr = UserExperienceInterpretResult(pUserExperience, MB_OKCANCEL, nResult);
-            ExitOnRootFailure(hr, "UX aborted detect.");
         }
+        else // MSI not installed then the features can't be either.
+        {
+            installState = INSTALLSTATE_ABSENT;
+        }
+
+        // set current state
+        switch (installState)
+        {
+        case INSTALLSTATE_ABSENT:
+            pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_ABSENT;
+            break;
+        case INSTALLSTATE_ADVERTISED:
+            pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_ADVERTISED;
+            break;
+        case INSTALLSTATE_LOCAL:
+            pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_LOCAL;
+            break;
+        case INSTALLSTATE_SOURCE:
+            pFeature->currentState = BOOTSTRAPPER_FEATURE_STATE_SOURCE;
+            break;
+        default:
+            hr = E_UNEXPECTED;
+            ExitOnRootFailure(hr, "Invalid state value.");
+        }
+
+        // pass to UX
+        nResult = pUserExperience->pUserExperience->OnDetectMsiFeature(pPackage->sczId, pFeature->sczId, pFeature->currentState);
+        hr = UserExperienceInterpretResult(pUserExperience, MB_OKCANCEL, nResult);
+        ExitOnRootFailure(hr, "UX aborted detect.");
     }
 
 LExit:
@@ -681,7 +682,7 @@ extern "C" HRESULT MsiEnginePlanCalculatePackage(
     int nResult = 0;
     BOOL fBARequestedCache = FALSE;
 
-    if (pPackage->Msi.cFeatures)
+    if (pPackage->Msi.fEnableFeatureSelection && pPackage->Msi.cFeatures)
     {
         // If the package is present and we're repairing it.
         BOOL fRepairingPackage = (BOOTSTRAPPER_PACKAGE_STATE_CACHED < pPackage->currentState && BOOTSTRAPPER_REQUEST_STATE_REPAIR == pPackage->requested);
@@ -883,7 +884,7 @@ extern "C" HRESULT MsiEnginePlanAddPackage(
     BOOTSTRAPPER_FEATURE_ACTION* rgFeatureActions = NULL;
     BOOTSTRAPPER_FEATURE_ACTION* rgRollbackFeatureActions = NULL;
 
-    if (pPackage->Msi.cFeatures)
+    if (pPackage->Msi.fEnableFeatureSelection && pPackage->Msi.cFeatures)
     {
         // Allocate and populate array for feature actions.
         rgFeatureActions = (BOOTSTRAPPER_FEATURE_ACTION*)MemAlloc(sizeof(BOOTSTRAPPER_FEATURE_ACTION) * pPackage->Msi.cFeatures, TRUE);
@@ -1673,127 +1674,131 @@ static HRESULT ConcatFeatureActionProperties(
     LPWSTR sczAdvertise = NULL;
     LPWSTR sczRemove = NULL;
 
-    // features
-    for (DWORD i = 0; i < pPackage->Msi.cFeatures; ++i)
+    // If there are feature actions, build up their feature state actions.
+    if (rgFeatureActions)
     {
-        BURN_MSIFEATURE* pFeature = &pPackage->Msi.rgFeatures[i];
-
-        switch (rgFeatureActions[i])
+        // features
+        for (DWORD i = 0; i < pPackage->Msi.cFeatures; ++i)
         {
-        case BOOTSTRAPPER_FEATURE_ACTION_ADDLOCAL:
-            if (sczAddLocal)
-            {
-                hr = StrAllocConcat(&sczAddLocal, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
-            }
-            hr = StrAllocConcat(&sczAddLocal, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
+            BURN_MSIFEATURE* pFeature = &pPackage->Msi.rgFeatures[i];
 
-        case BOOTSTRAPPER_FEATURE_ACTION_ADDSOURCE:
-            if (sczAddSource)
+            switch (rgFeatureActions[i])
             {
-                hr = StrAllocConcat(&sczAddSource, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
-            }
-            hr = StrAllocConcat(&sczAddSource, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
+            case BOOTSTRAPPER_FEATURE_ACTION_ADDLOCAL:
+                if (sczAddLocal)
+                {
+                    hr = StrAllocConcat(&sczAddLocal, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczAddLocal, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
 
-        case BOOTSTRAPPER_FEATURE_ACTION_ADDDEFAULT:
-            if (sczAddDefault)
-            {
-                hr = StrAllocConcat(&sczAddDefault, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
-            }
-            hr = StrAllocConcat(&sczAddDefault, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
+            case BOOTSTRAPPER_FEATURE_ACTION_ADDSOURCE:
+                if (sczAddSource)
+                {
+                    hr = StrAllocConcat(&sczAddSource, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczAddSource, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
 
-        case BOOTSTRAPPER_FEATURE_ACTION_REINSTALL:
-            if (sczReinstall)
-            {
-                hr = StrAllocConcat(&sczReinstall, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
-            }
-            hr = StrAllocConcat(&sczReinstall, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
+            case BOOTSTRAPPER_FEATURE_ACTION_ADDDEFAULT:
+                if (sczAddDefault)
+                {
+                    hr = StrAllocConcat(&sczAddDefault, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczAddDefault, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
 
-        case BOOTSTRAPPER_FEATURE_ACTION_ADVERTISE:
-            if (sczAdvertise)
-            {
-                hr = StrAllocConcat(&sczAdvertise, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
-            }
-            hr = StrAllocConcat(&sczAdvertise, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
+            case BOOTSTRAPPER_FEATURE_ACTION_REINSTALL:
+                if (sczReinstall)
+                {
+                    hr = StrAllocConcat(&sczReinstall, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczReinstall, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
 
-        case BOOTSTRAPPER_FEATURE_ACTION_REMOVE:
-            if (sczRemove)
-            {
-                hr = StrAllocConcat(&sczRemove, L",", 0);
-                ExitOnFailure(hr, "Failed to concat separator.");
+            case BOOTSTRAPPER_FEATURE_ACTION_ADVERTISE:
+                if (sczAdvertise)
+                {
+                    hr = StrAllocConcat(&sczAdvertise, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczAdvertise, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
+
+            case BOOTSTRAPPER_FEATURE_ACTION_REMOVE:
+                if (sczRemove)
+                {
+                    hr = StrAllocConcat(&sczRemove, L",", 0);
+                    ExitOnFailure(hr, "Failed to concat separator.");
+                }
+                hr = StrAllocConcat(&sczRemove, pFeature->sczId, 0);
+                ExitOnFailure(hr, "Failed to concat feature.");
+                break;
             }
-            hr = StrAllocConcat(&sczRemove, pFeature->sczId, 0);
-            ExitOnFailure(hr, "Failed to concat feature.");
-            break;
         }
-    }
 
-    if (sczAddLocal)
-    {
-        hr = StrAllocFormatted(&scz, L" ADDLOCAL=\"%s\"", sczAddLocal, 0);
-        ExitOnFailure(hr, "Failed to format ADDLOCAL string.");
+        if (sczAddLocal)
+        {
+            hr = StrAllocFormatted(&scz, L" ADDLOCAL=\"%s\"", sczAddLocal, 0);
+            ExitOnFailure(hr, "Failed to format ADDLOCAL string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
-    }
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
 
-    if (sczAddSource)
-    {
-        hr = StrAllocFormatted(&scz, L" ADDSOURCE=\"%s\"", sczAddSource, 0);
-        ExitOnFailure(hr, "Failed to format ADDSOURCE string.");
+        if (sczAddSource)
+        {
+            hr = StrAllocFormatted(&scz, L" ADDSOURCE=\"%s\"", sczAddSource, 0);
+            ExitOnFailure(hr, "Failed to format ADDSOURCE string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
-    }
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
 
-    if (sczAddDefault)
-    {
-        hr = StrAllocFormatted(&scz, L" ADDDEFAULT=\"%s\"", sczAddDefault, 0);
-        ExitOnFailure(hr, "Failed to format ADDDEFAULT string.");
+        if (sczAddDefault)
+        {
+            hr = StrAllocFormatted(&scz, L" ADDDEFAULT=\"%s\"", sczAddDefault, 0);
+            ExitOnFailure(hr, "Failed to format ADDDEFAULT string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
-    }
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
 
-    if (sczReinstall)
-    {
-        hr = StrAllocFormatted(&scz, L" REINSTALL=\"%s\"", sczReinstall, 0);
-        ExitOnFailure(hr, "Failed to format REINSTALL string.");
+        if (sczReinstall)
+        {
+            hr = StrAllocFormatted(&scz, L" REINSTALL=\"%s\"", sczReinstall, 0);
+            ExitOnFailure(hr, "Failed to format REINSTALL string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
-    }
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
 
-    if (sczAdvertise)
-    {
-        hr = StrAllocFormatted(&scz, L" ADVERTISE=\"%s\"", sczAdvertise, 0);
-        ExitOnFailure(hr, "Failed to format ADVERTISE string.");
+        if (sczAdvertise)
+        {
+            hr = StrAllocFormatted(&scz, L" ADVERTISE=\"%s\"", sczAdvertise, 0);
+            ExitOnFailure(hr, "Failed to format ADVERTISE string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
-    }
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
 
-    if (sczRemove)
-    {
-        hr = StrAllocFormatted(&scz, L" REMOVE=\"%s\"", sczRemove, 0);
-        ExitOnFailure(hr, "Failed to format REMOVE string.");
+        if (sczRemove)
+        {
+            hr = StrAllocFormatted(&scz, L" REMOVE=\"%s\"", sczRemove, 0);
+            ExitOnFailure(hr, "Failed to format REMOVE string.");
 
-        hr = StrAllocConcatSecure(psczArguments, scz, 0);
-        ExitOnFailure(hr, "Failed to concat argument string.");
+            hr = StrAllocConcatSecure(psczArguments, scz, 0);
+            ExitOnFailure(hr, "Failed to concat argument string.");
+        }
     }
 
 LExit:
