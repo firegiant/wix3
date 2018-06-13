@@ -207,6 +207,17 @@ static LRESULT CALLBACK WndProc(
         return fRet;
         }
 
+    case WM_ENDSESSION:
+        {
+        BOOL fEnding = static_cast<BOOL>(wParam);
+        DWORD dwEndSession = static_cast<DWORD>(lParam);
+        BOOL fMustClose = ENDSESSION_CLOSEAPP & dwEndSession;
+        BOOL fCritical = ENDSESSION_CRITICAL & dwEndSession;
+        BOOL fLoggingOff = ENDSESSION_LOGOFF & dwEndSession;
+        LogStringLine(REPORT_DEBUG, "WM_ENDSESSION: Session ending: %hs, must close: %hs, critical: %hs, logging off: %hs", LoggingBoolToString(fEnding), LoggingBoolToString(fMustClose), LoggingBoolToString(fCritical), LoggingBoolToString(fLoggingOff));
+        return 0;
+        }
+
     case WM_DESTROY:
         ::PostQuitMessage(0);
         return 0;

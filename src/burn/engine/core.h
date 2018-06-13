@@ -119,6 +119,7 @@ typedef struct _BURN_ENGINE_STATE
     BURN_AU_PAUSE_ACTION automaticUpdates;
 
     DWORD dwElevatedLoggingTlsId;
+    BOOL fDebugLogging;
 
     LPWSTR sczBundleEngineWorkingPath;
     BURN_PIPE_CONNECTION companionConnection;

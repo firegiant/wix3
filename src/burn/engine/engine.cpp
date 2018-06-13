@@ -593,6 +593,12 @@ static HRESULT RunElevated(
         ExitWithLastError(hr, "Failed to set elevated pipe into thread local storage for logging.");
     }
 
+    if (0 < ::GetEnvironmentVariableW(L"WIX_BURN_DEBUG_LOGGING", NULL, 0))
+    {
+        pEngineState->fDebugLogging = TRUE;
+        LogSetLevel(REPORT_DEBUG, FALSE);
+    }
+
     LogRedirect(RedirectLoggingOverPipe, pEngineState);
 
     // Create a top-level window to prevent shutting down the elevated process.
@@ -800,6 +806,11 @@ static HRESULT DAPI RedirectLoggingOverPipe(
     BYTE* pbData = NULL;
     SIZE_T cbData = 0;
     DWORD dwResult = 0;
+
+    if (pEngineState->fDebugLogging)
+    {
+        ::OutputDebugStringA(szString);
+    }
 
     // Prevent this function from being called recursively.
     if (s_fCurrentlyLoggingToPipe)
