@@ -1070,6 +1070,12 @@
                 <Parameter Type="System.String" Name="file" />
                 <Parameter Type="System.String" Name="fileType" />
             </Instance>
+            <Instance>
+                The system cannot find the file '{0}'. Checked the following paths: {2}
+                <Parameter Type="System.String" Name="file" />
+                <Parameter Type="System.Boolean" Name="ignored" />
+                <Parameter Type="System.String" Name="checkedPaths" />
+            </Instance>
         </Message>
         <Message Id="InvalidXml" Number="104">
             <Instance>

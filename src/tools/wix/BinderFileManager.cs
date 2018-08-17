@@ -330,6 +330,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
         /// <returns>Should return a valid path for the stream to be imported.</returns>
         public virtual string ResolveFile(string source, string type, SourceLineNumberCollection sourceLineNumbers, BindStage bindStage)
         {
+            List<string> checkedPaths = new List<string>();
+
             // the following new local variables are used for bind path and protect the changes to object field.
             StringCollection currentBindPaths = null;
             NameValueCollection currentNamedBindPaths = null;
@@ -367,6 +369,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 {
                     return source;
                 }
+
+                checkedPaths.Add(source);
             }
             else // not a rooted path so let's try applying all the different source resolution options.
             {
@@ -394,6 +398,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             {
                                 return filePath;
                             }
+
+                            checkedPaths.Add(filePath);
                         }
                     }
                 }
@@ -406,12 +412,16 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         {
                             return filePath;
                         }
+
+                        checkedPaths.Add(filePath);
                     }
                 }
                 else if (BinderFileManager.CheckFileExists(source))
                 {
                     return source;
                 }
+
+                checkedPaths.Add(source);
 
                 foreach (string path in currentSourcePaths)
                 {
@@ -421,6 +431,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         return filePath;
                     }
 
+                    checkedPaths.Add(filePath);
+
                     if (source.StartsWith("SourceDir\\", StringComparison.Ordinal) || source.StartsWith("SourceDir/", StringComparison.Ordinal))
                     {
                         filePath = Path.Combine(path, source.Substring(10));
@@ -428,12 +440,14 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         {
                             return filePath;
                         }
+
+                        checkedPaths.Add(filePath);
                     }
                 }
             }
 
             // Didn't find the file.
-            throw new WixFileNotFoundException(sourceLineNumbers, source, type);
+            throw new WixFileNotFoundException(sourceLineNumbers, source, type) { CheckedPaths = checkedPaths.ToArray() };
         }
 
         /// <summary>

@@ -47,5 +47,10 @@ namespace Microsoft.Tools.WindowsInstallerXml
             base(WixErrors.FileNotFound(sourceLineNumbers, file, fileType))
         {
         }
+
+        /// <summary>
+        /// List of paths checked where file was not found.
+        /// </summary>
+        public string[] CheckedPaths { get; set; }
     }
 }

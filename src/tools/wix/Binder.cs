@@ -2326,10 +2326,10 @@ namespace Microsoft.Tools.WindowsInstallerXml
                                         objectField.Data = this.FileManager.ResolveFile(filePathToResolve, table.Name, row.SourceLineNumbers, BindStage.Updated);
                                     }
                                 }
-                                catch (WixFileNotFoundException)
+                                catch (WixFileNotFoundException e)
                                 {
                                     // display the error with source line information
-                                    this.core.OnMessage(WixErrors.FileNotFound(row.SourceLineNumbers, (string)objectField.Data));
+                                    this.core.OnMessage(WixErrors.FileNotFound(row.SourceLineNumbers, (string)objectField.Data, false, String.Join(", ", e.CheckedPaths)));
                                 }
                             }
 
