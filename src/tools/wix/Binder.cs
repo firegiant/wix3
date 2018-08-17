@@ -6084,7 +6084,8 @@ namespace Microsoft.Tools.WindowsInstallerXml
             Table componentTable = output.Tables["Component"];
             if (null != componentTable)
             {
-                Dictionary<string, bool> componentGuidConditions = new Dictionary<string, bool>(componentTable.Rows.Count);
+                Dictionary<string, List<ComponentRow>> componentGuidConditions = new Dictionary<string, List<ComponentRow>>(componentTable.Rows.Count, StringComparer.OrdinalIgnoreCase);
+                HashSet<string> guidCollisions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (ComponentRow row in componentTable.Rows)
                 {
@@ -6092,27 +6093,101 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     // there's already an error that prevented it from being replaced with a real GUID.
                     if (!String.IsNullOrEmpty(row.Guid) && "*" != row.Guid)
                     {
-                        bool thisComponentHasCondition = !String.IsNullOrEmpty(row.Condition);
-                        bool allComponentsHaveConditions = thisComponentHasCondition;
-
-                        if (componentGuidConditions.ContainsKey(row.Guid))
+                        if (!componentGuidConditions.TryGetValue(row.Guid, out List<ComponentRow> rows))
                         {
-                            allComponentsHaveConditions = componentGuidConditions[row.Guid] && thisComponentHasCondition;
-
-                            if (allComponentsHaveConditions)
-                            {
-                                this.core.OnMessage(WixWarnings.DuplicateComponentGuidsMustHaveMutuallyExclusiveConditions(row.SourceLineNumbers, row.Component, row.Guid));
-                            }
-                            else
-                            {
-                                this.core.OnMessage(WixErrors.DuplicateComponentGuids(row.SourceLineNumbers, row.Component, row.Guid));
-                            }
+                            rows = new List<ComponentRow>();
+                            componentGuidConditions.Add(row.Guid, rows);
                         }
 
-                        componentGuidConditions[row.Guid] = allComponentsHaveConditions;
+                        rows.Add(row);
+
+                        if (rows.Count > 1)
+                        {
+                            guidCollisions.Add(row.Guid);
+                        }
+                    }
+                }
+
+                Hashtable directories = this.LoadDirectoryTable(output.Tables["Directory"]);
+                RowDictionary<Row> registries = new RowDictionary<Row>(output.Tables["Registry"]);
+                RowDictionary<WixFileRow> wixFiles = new RowDictionary<WixFileRow>(output.Tables["WixFile"]);
+
+                foreach (string guid in guidCollisions)
+                {
+                    List<ComponentRow> collidingComponentRows = componentGuidConditions[guid];
+
+                    bool allComponentsHaveConditions = true;
+
+                    foreach (ComponentRow row in collidingComponentRows)
+                    {
+                        if (String.IsNullOrEmpty(row.Condition))
+                        {
+                            allComponentsHaveConditions = false;
+                            break;
+                        }
+                    }
+
+                    foreach (ComponentRow row in collidingComponentRows)
+                    {
+                        string path;
+                        string type;
+
+                        if (String.IsNullOrEmpty(row.KeyPath) || row.IsOdbcDataSourceKeyPath)
+                        {
+                            path = GetDirectoryPath(directories, null, row.Directory, false);
+                            type = "directory";
+                        }
+                        else if (row.IsRegistryKeyPath)
+                        {
+                            type = "registry path";
+                            Row registryRow = (Row)registries[row.KeyPath];
+                            path = String.Concat(registryRow[2], "\\", registryRow[3]);
+                        }
+                        else
+                        {
+                            WixFileRow fileRow = (WixFileRow)wixFiles[row.KeyPath];
+                            path = fileRow.Source;
+                            type = "source path";
+                        }
+
+                        if (allComponentsHaveConditions)
+                        {
+                            this.core.OnMessage(WixWarnings.DuplicateComponentGuidsMustHaveMutuallyExclusiveConditions(row.SourceLineNumbers, row.Component, row.Guid, type, path));
+                        }
+                        else
+                        {
+                            this.core.OnMessage(WixErrors.DuplicateComponentGuids(row.SourceLineNumbers, row.Component, row.Guid, type, path));
+                        }
                     }
                 }
             }
+        }
+
+        private Hashtable LoadDirectoryTable(Table directoryTable)
+        {
+            if (null == directoryTable)
+            {
+                return new Hashtable();
+            }
+
+            Hashtable directories = new Hashtable(directoryTable.Rows.Count);
+
+            // get the target paths for all directories
+            foreach (Row row in directoryTable.Rows)
+            {
+                // if the directory Id already exists, we will skip it here since
+                // checking for duplicate primary keys is done later when importing tables
+                // into database
+                if (directories.ContainsKey(row[0]))
+                {
+                    continue;
+                }
+
+                string targetName = Installer.GetName((string)row[2], false, true);
+                directories.Add(row[0], new ResolvedDirectory((string)row[1], targetName));
+            }
+
+            return directories;
         }
 
         /// <summary>
