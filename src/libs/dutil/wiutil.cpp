@@ -659,12 +659,23 @@ extern "C" HRESULT DAPI WiuEnumRelatedProductCodes(
 
         if (fReturnHighestVersionOnly)
         {
-            // get the version
+            // try to get the version but if the product registration is broken
+            // (for whatever reason), skip this product
             hr = WiuGetProductInfo(wzCurrentProductCode, L"VersionString", &sczInstalledVersion);
-            ExitOnFailure1(hr, "Failed to get version for product code: %ls", wzCurrentProductCode);
+            if (FAILED(hr))
+            {
+                ExitTrace(hr, "Could not get product version for product code: %ls, skipping...", wzCurrentProductCode);
+                continue;
+            }
 
+            // try to parse the product version but if it is corrupt (for whatever
+            // reason), skip it
             hr = FileVersionFromStringEx(sczInstalledVersion, 0, &qwCurrentVersion);
-            ExitOnFailure2(hr, "Failed to convert version: %ls to DWORD64 for product code: %ls", sczInstalledVersion, wzCurrentProductCode);
+            if (FAILED(hr))
+            {
+                ExitTrace(hr, "Could not convert version: %ls to DWORD64 for product code: %ls, skipping...", sczInstalledVersion, wzCurrentProductCode);
+                continue;
+            }
 
             // if this is the first product found then it is the highest version (for now)
             if (0 == *pcRelatedProducts)
