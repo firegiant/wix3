@@ -155,7 +155,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
         {
             SourceLineNumberCollection sourceLineNumbers = Preprocessor.GetSourceLineNumbers(node);
             string id = null;
-            int attributes = 0;
+            int attributes = 8; // SCA_CERT_ATTRIBUTE_VITAL
             string binaryKey = null;
             string certificatePath = null;
             string name = null;
@@ -257,6 +257,16 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                                         this.Core.OnMessage(WixErrors.IllegalAttributeValue(sourceLineNumbers, node.Name, "StoreName", storeNameValue, "ca", "my", "request", "root", "otherPeople", "trustedPeople", "trustedPublisher"));
                                         break;
                                 }
+                            }
+                            break;
+                        case "Vital":
+                            if (YesNoType.Yes == this.Core.GetAttributeYesNoValue(sourceLineNumbers, attrib))
+                            {
+                                attributes |= 8; // SCA_CERT_ATTRIBUTE_VITAL
+                            }
+                            else
+                            {
+                                attributes &= ~8; // SCA_CERT_ATTRIBUTE_VITAL
                             }
                             break;
                         default:

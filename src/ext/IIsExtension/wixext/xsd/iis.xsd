@@ -568,6 +568,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="Vital" type="YesNoType">
+                <xs:annotation>
+                    <xs:documentation>
+                        This attribute indicates whether failure to install the certificate will fail an installation. The default is 'yes'.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 
