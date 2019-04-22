@@ -2559,7 +2559,7 @@ StrArrayAllocString - Allocates a string array.
 ****************************************************************************/
 extern "C" HRESULT DAPI StrArrayAllocString(
     __deref_inout_ecount_opt(*pcStrArray) LPWSTR **prgsczStrArray,
-    __inout LPUINT pcStrArray,
+    __inout UINT* pcStrArray,
     __in_z LPCWSTR wzSource,
     __in DWORD_PTR cchSource
     )
@@ -2617,7 +2617,7 @@ StrSplitAllocArray - Splits a string into an array.
 ****************************************************************************/
 extern "C" HRESULT DAPI StrSplitAllocArray(
     __deref_inout_ecount_opt(*pcStrArray) LPWSTR **prgsczStrArray,
-    __inout LPUINT pcStrArray,
+    __inout UINT* pcStrArray,
     __in_z LPCWSTR wzSource,
     __in_z LPCWSTR wzDelim
     )
