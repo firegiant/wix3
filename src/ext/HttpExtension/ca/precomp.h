@@ -15,3 +15,12 @@
 
 #include "CustomMsiErrors.h"
 #include "cost.h"
+
+#include "..\..\ca\inc\caSuffix.h"
+
+enum eHandleExisting
+{
+    heReplace = 0,
+    heIgnore = 1,
+    heFail = 2
+};

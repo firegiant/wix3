@@ -36,11 +36,12 @@
 
   <PropertyGroup>
     <ProjectAdditionalIncludeDirectories>$(WixRoot)src\libs\dutil\inc;$(WixRoot)src\libs\wcautil</ProjectAdditionalIncludeDirectories>
-    <ProjectAdditionalLinkLibraries>crypt32.lib;httpapi.lib;msi.lib;dutil.lib;wcautil.lib</ProjectAdditionalLinkLibraries>
+    <ProjectAdditionalLinkLibraries>crypt32.lib;httpapi.lib;msi.lib;rpcrt4.lib;ws2_32.lib;dutil.lib;wcautil.lib</ProjectAdditionalLinkLibraries>
   </PropertyGroup>
 
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="snisslcert.cpp" />
     <ClCompile Include="wixhttpca.cpp" />
   </ItemGroup>
   <ItemGroup>

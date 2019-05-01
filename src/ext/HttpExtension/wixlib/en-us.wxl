@@ -9,4 +9,11 @@
     <String Id="WixExecHttpUrlReservationsInstall" Overridable="yes">Configuring Windows HTTP Server</String>
     <String Id="WixRollbackHttpUrlReservationsUninstall" Overridable="yes">Rolling back Windows HTTP Server configuration</String>
     <String Id="WixExecHttpUrlReservationsUninstall" Overridable="yes">Configuring Windows HTTP Server</String>
+
+    <String Id="WixSchedHttpSniSslCertsInstall" Overridable="yes">Preparing to configure Windows HTTP Server SSL</String>
+    <String Id="WixSchedHttpSniSslCertsUninstall" Overridable="yes">Preparing to configure Windows HTTP Server SSL</String>
+    <String Id="WixRollbackHttpSniSslCertsInstall" Overridable="yes">Rolling back Windows HTTP Server SSL configuration</String>
+    <String Id="WixExecHttpSniSslCertsInstall" Overridable="yes">Configuring Windows HTTP Server SSL</String>
+    <String Id="WixRollbackHttpSniSslCertsUninstall" Overridable="yes">Rolling back Windows HTTP Server SSL configuration</String>
+    <String Id="WixExecHttpSniSslCertsUninstall" Overridable="yes">Configuring Windows HTTP Server SSL</String>
 </WixLocalization>

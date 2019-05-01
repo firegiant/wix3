@@ -37,8 +37,6 @@ LPCWSTR vcsHttpUrlAceQuery =
     L"WHERE `WixHttpUrlAce`.`WixHttpUrlReservation_`=?";
 enum eHttpUrlAceQuery { huaqSecurityPrincipal = 1, huaqRights };
 
-enum eHandleExisting { heReplace = 0, heIgnore = 1, heFail = 2 };
-
 /******************************************************************
  SchedHttpUrlReservations - immediate custom action worker to
    prepare configuring URL reservations.
