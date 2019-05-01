@@ -3,6 +3,24 @@
 
 
 <tableDefinitions xmlns="http://schemas.microsoft.com/wix/2006/tables">
+  <tableDefinition name="WixHttpSniSslCert">
+    <columnDefinition name="WixHttpSniSslCert" type="string" length="72" primaryKey="yes" modularize="column"
+        category="identifier" description="The non-localized primary key for the table." />
+    <columnDefinition name="Host" type="string" length="0" modularize="property" nullable="no"
+        category="formatted" description="Host for the SNI SSL certificate." />
+    <columnDefinition name="Port" type="string" length="0" modularize="property" nullable="no"
+        category="formatted" description="Port for the  SNI SSL certificate." />
+    <columnDefinition name="Thumbprint" type="string" length="0" modularize="property" nullable="no"
+        category="formatted" description="Thumbprint of the SNI SSL certificate to find." />
+    <columnDefinition name="AppId" type="string" length="0" modularize="property" nullable="yes"
+        category="formatted" description="Optional application id for the SNI SSL certificate." />
+    <columnDefinition name="Store" type="string" length="0" modularize="property" nullable="yes"
+        category="formatted" description="Optional store to find the SNI SSL certificate." />
+    <columnDefinition name="HandleExisting" type="number" length="4" nullable="no"
+        minValue="0" maxValue="2" description="The behavior when trying to install a SNI SSL certificate and it already exists." />
+    <columnDefinition name="Component_" type="string" length="72" modularize="column"
+        keyTable="Component" keyColumn="1" category="identifier" description="Foreign key into the Component table referencing the component that controls the URL reservation." />
+  </tableDefinition>
   <tableDefinition name="WixHttpUrlReservation">
     <columnDefinition name="WixHttpUrlReservation" type="string" length="72" primaryKey="yes" modularize="column"
         category="identifier" description="The non-localized primary key for the table." />

@@ -26,9 +26,6 @@ static HRESULT RemoveUrlReservation(
     __in LPWSTR wzUrl
     );
 
-HTTPAPI_VERSION vcHttpVersion = HTTPAPI_VERSION_1;
-ULONG vcHttpFlags = HTTP_INITIALIZE_CONFIG;
-
 LPCWSTR vcsHttpUrlReservationQuery =
     L"SELECT `WixHttpUrlReservation`.`WixHttpUrlReservation`, `WixHttpUrlReservation`.`HandleExisting`, `WixHttpUrlReservation`.`Sddl`, `WixHttpUrlReservation`.`Url`, `WixHttpUrlReservation`.`Component_` "
     L"FROM `WixHttpUrlReservation`";
@@ -40,10 +37,8 @@ LPCWSTR vcsHttpUrlAceQuery =
     L"WHERE `WixHttpUrlAce`.`WixHttpUrlReservation_`=?";
 enum eHttpUrlAceQuery { huaqSecurityPrincipal = 1, huaqRights };
 
-enum eHandleExisting { heReplace = 0, heIgnore = 1, heFail = 2 };
-
 /******************************************************************
- SchedHttpUrlReservations - immediate custom action worker to 
+ SchedHttpUrlReservations - immediate custom action worker to
    prepare configuring URL reservations.
 
 ********************************************************************/
@@ -98,7 +93,7 @@ static UINT SchedHttpUrlReservations(
     hr = WcaOpenExecuteView(vcsHttpUrlReservationQuery, &hView);
     ExitOnFailure(hr, "Failed to open view on the WixHttpUrlReservation table.");
 
-    hr = HRESULT_FROM_WIN32(::HttpInitialize(vcHttpVersion, vcHttpFlags, NULL));
+    hr = HRESULT_FROM_WIN32(::HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_CONFIG, NULL));
     ExitOnFailure(hr, "Failed to initialize HTTP Server configuration.");
 
     fHttpInitialized = TRUE;
@@ -193,16 +188,16 @@ static UINT SchedHttpUrlReservations(
 
         if (WCA_TODO_INSTALL == todoSched)
         {
-            hr = WcaDoDeferredAction(L"WixRollbackHttpUrlReservationsInstall", sczRollbackCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
+            hr = WcaDoDeferredAction(PLATFORM_DECORATION(L"WixRollbackHttpUrlReservationsInstall"), sczRollbackCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
             ExitOnFailure(hr, "Failed to schedule install URL reservations rollback.");
-            hr = WcaDoDeferredAction(L"WixExecHttpUrlReservationsInstall", sczCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
+            hr = WcaDoDeferredAction(PLATFORM_DECORATION(L"WixExecHttpUrlReservationsInstall"), sczCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
             ExitOnFailure(hr, "Failed to schedule install URL reservations execution.");
         }
         else
         {
-            hr = WcaDoDeferredAction(L"WixRollbackHttpUrlReservationsUninstall", sczRollbackCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
+            hr = WcaDoDeferredAction(PLATFORM_DECORATION(L"WixRollbackHttpUrlReservationsUninstall"), sczRollbackCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
             ExitOnFailure(hr, "Failed to schedule uninstall URL reservations rollback.");
-            hr = WcaDoDeferredAction(L"WixExecHttpUrlReservationsUninstall", sczCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
+            hr = WcaDoDeferredAction(PLATFORM_DECORATION(L"WixExecHttpUrlReservationsUninstall"), sczCustomActionData, cUrlReservations * COST_HTTP_URL_ACL);
             ExitOnFailure(hr, "Failed to schedule uninstall URL reservations execution.");
         }
     }
@@ -222,7 +217,7 @@ LExit:
 
     if (fHttpInitialized)
     {
-        ::HttpTerminate(vcHttpFlags, NULL);
+        ::HttpTerminate(HTTP_INITIALIZE_CONFIG, NULL);
     }
 
     return WcaFinalize(er = FAILED(hr) ? ERROR_INSTALL_FAILURE : er);
@@ -313,7 +308,7 @@ extern "C" UINT __stdcall SchedHttpUrlReservationsUninstall(
 }
 
 /******************************************************************
- ExecHttpUrlReservations - deferred custom action entry point to 
+ ExecHttpUrlReservations - deferred custom action entry point to
    register and remove URL reservations.
 
 ********************************************************************/
@@ -338,7 +333,7 @@ extern "C" UINT __stdcall ExecHttpUrlReservations(
     hr = WcaInitialize(hInstall, "ExecHttpUrlReservations");
     ExitOnFailure(hr, "Failed to initialize.");
 
-    hr = HRESULT_FROM_WIN32(::HttpInitialize(vcHttpVersion, vcHttpFlags, NULL));
+    hr = HRESULT_FROM_WIN32(::HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_CONFIG, NULL));
     ExitOnFailure(hr, "Failed to initialize HTTP Server configuration.");
 
     fHttpInitialized = TRUE;
@@ -424,7 +419,7 @@ LExit:
 
     if (fHttpInitialized)
     {
-        ::HttpTerminate(vcHttpFlags, NULL);
+        ::HttpTerminate(HTTP_INITIALIZE_CONFIG, NULL);
     }
 
     return WcaFinalize(FAILED(hr) ? ERROR_INSTALL_FAILURE : ERROR_SUCCESS);
@@ -479,7 +474,7 @@ static HRESULT GetUrlReservation(
 
         er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
     }
-    
+
     if (ERROR_SUCCESS == er)
     {
         hr = StrAllocString(psczSddl, pSet->ParamDesc.pStringSecurityDescriptor, 0);

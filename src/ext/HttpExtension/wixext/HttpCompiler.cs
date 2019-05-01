@@ -65,6 +65,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
 
                     switch (element.LocalName)
                     {
+                        case "SniSslCertificate":
+                            this.ParseSniSslCertificateElement(element, componentId);
+                            break;
                         case "UrlReservation":
                             this.ParseUrlReservationElement(element, componentId, null);
                             break;
@@ -76,6 +79,141 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 default:
                     this.Core.UnexpectedElement(parentElement, element);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Parses a SniSsl element.
+        /// </summary>
+        /// <param name="node">The element to parse.</param>
+        /// <param name="componentId">Identifier of the component that owns this SNI SSL Certificate.</param>
+        private void ParseSniSslCertificateElement(XmlNode node, string componentId)
+        {
+            SourceLineNumberCollection sourceLineNumbers = Preprocessor.GetSourceLineNumbers(node);
+            string id = null;
+            string host = null;
+            string port = null;
+            string appId = null;
+            string store = null;
+            string thumbprint = null;
+            int handleExisting = HttpConstants.heReplace;
+            string handleExistingValue = null;
+
+            foreach (XmlAttribute attrib in node.Attributes)
+            {
+                if (String.IsNullOrEmpty(attrib.NamespaceURI) || this.schema.TargetNamespace == attrib.NamespaceURI)
+                {
+                    switch (attrib.LocalName)
+                    {
+                        case "Id":
+                            id = this.Core.GetAttributeIdentifierValue(sourceLineNumbers, attrib);
+                            break;
+                        case "AppId":
+                            appId = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        case "HandleExisting":
+                            handleExistingValue = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            switch (handleExistingValue)
+                            {
+                                case "replace":
+                                    handleExisting = HttpConstants.heReplace;
+                                    break;
+                                case "ignore":
+                                    handleExisting = HttpConstants.heIgnore;
+                                    break;
+                                case "fail":
+                                    handleExisting = HttpConstants.heFail;
+                                    break;
+                                default:
+                                    this.Core.OnMessage(WixErrors.IllegalAttributeValue(sourceLineNumbers, node.LocalName, "HandleExisting", handleExistingValue, "replace", "ignore", "fail"));
+                                    break;
+                            }
+                            break;
+                        case "Host":
+                            host = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        case "Port":
+                            port = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        case "Store":
+                            store = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        case "Thumbprint":
+                            thumbprint = this.Core.GetAttributeValue(sourceLineNumbers, attrib);
+                            break;
+                        default:
+                            this.Core.UnexpectedAttribute(sourceLineNumbers, attrib);
+                            break;
+                    }
+                }
+                else
+                {
+                    this.Core.ParseExtensionAttribute(sourceLineNumbers, (XmlElement)node, attrib);
+                }
+            }
+
+            // Need the element ID for child element processing, so generate now if not authored.
+            if (null == id)
+            {
+                id = this.Core.GenerateIdentifier("ssl", componentId, host, port);
+            }
+
+            // Required attributes.
+            if (null == host)
+            {
+                this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.LocalName, "Host"));
+            }
+
+            if (null == port)
+            {
+                this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.LocalName, "Port"));
+            }
+
+            if (null == thumbprint)
+            {
+                this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.LocalName, "Thumbprint"));
+            }
+
+            // Parse unknown children.
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (XmlNodeType.Element == child.NodeType)
+                {
+                    if (this.Schema.TargetNamespace == child.NamespaceURI)
+                    {
+                        this.Core.UnexpectedElement(node, child);
+                    }
+                    else
+                    {
+                        this.Core.ParseExtensionElement(sourceLineNumbers, (XmlElement)node, (XmlElement)child);
+                    }
+                }
+            }
+
+            if (!this.Core.EncounteredError)
+            {
+                Row row = this.Core.CreateRow(sourceLineNumbers, "WixHttpSniSslCert");
+                row[0] = id;
+                row[1] = host;
+                row[2] = port;
+                row[3] = thumbprint;
+                row[4] = appId;
+                row[5] = store;
+                row[6] = handleExisting;
+                row[7] = componentId;
+
+                if (this.Core.CurrentPlatform == Platform.ARM)
+                {
+                    // Ensure ARM version of the CA is referenced.
+                    this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixSchedHttpSniSslCertsInstall_ARM");
+                    this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixSchedHttpSniSslCertsUninstall_ARM");
+                }
+                else
+                {
+                    // All other supported platforms use x86.
+                    this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixSchedHttpSniSslCertsInstall");
+                    this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixSchedHttpSniSslCertsUninstall");
+                }
             }
         }
 
@@ -226,7 +364,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
             string securityPrincipal = defaultSecurityPrincipal;
             int rights = HttpConstants.GENERIC_ALL;
             string rightsValue = null;
-            
+
             foreach (XmlAttribute attrib in node.Attributes)
             {
                 if (String.IsNullOrEmpty(attrib.NamespaceURI) || this.schema.TargetNamespace == attrib.NamespaceURI)

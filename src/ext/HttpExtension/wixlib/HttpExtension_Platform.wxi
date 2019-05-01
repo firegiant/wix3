@@ -4,6 +4,7 @@
 
 <Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <?include caSuffix.wxi ?>
+
     <Fragment>
         <UIRef Id="WixHttpErrors" />
         <UI>
@@ -34,6 +35,38 @@
             </Custom>
         </InstallExecuteSequence>
     </Fragment>
+
+    <Fragment>
+        <UIRef Id="WixHttpErrors" />
+        <UI>
+            <ProgressText Action="WixSchedHttpSniSslCertsInstall$(var.Suffix)">!(loc.WixSchedHttpSniSslCertsInstall)</ProgressText>
+            <ProgressText Action="WixSchedHttpSniSslCertsUninstall$(var.Suffix)">!(loc.WixSchedHttpSniSslCertsUninstall)</ProgressText>
+            <ProgressText Action="WixRollbackHttpSniSslCertsInstall$(var.DeferredSuffix)">!(loc.WixRollbackHttpSniSslCertsInstall)</ProgressText>
+            <ProgressText Action="WixExecHttpSniSslCertsInstall$(var.DeferredSuffix)">!(loc.WixExecHttpSniSslCertsInstall)</ProgressText>
+            <ProgressText Action="WixRollbackHttpSniSslCertsUninstall$(var.DeferredSuffix)">!(loc.WixRollbackHttpSniSslCertsUninstall)</ProgressText>
+            <ProgressText Action="WixExecHttpSniSslCertsUninstall$(var.DeferredSuffix)">!(loc.WixExecHttpSniSslCertsUninstall)</ProgressText>
+        </UI>
+
+        <CustomAction Id="WixSchedHttpSniSslCertsInstall$(var.Suffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="SchedHttpSniSslCertsInstall" Execute="immediate" Return="check" SuppressModularization="yes" />
+        <CustomAction Id="WixSchedHttpSniSslCertsUninstall$(var.Suffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="SchedHttpSniSslCertsUninstall" Execute="immediate" Return="check" SuppressModularization="yes" />
+        <CustomAction Id="WixRollbackHttpSniSslCertsInstall$(var.DeferredSuffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="ExecHttpSniSslCerts" Execute="rollback" Impersonate="no" Return="check" SuppressModularization="yes" />
+        <CustomAction Id="WixExecHttpSniSslCertsInstall$(var.DeferredSuffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="ExecHttpSniSslCerts" Execute="deferred" Impersonate="no" Return="check" SuppressModularization="yes" />
+        <CustomAction Id="WixRollbackHttpSniSslCertsUninstall$(var.DeferredSuffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="ExecHttpSniSslCerts" Execute="rollback" Impersonate="no" Return="check" SuppressModularization="yes" />
+        <CustomAction Id="WixExecHttpSniSslCertsUninstall$(var.DeferredSuffix)" BinaryKey="WixHttpCA$(var.Suffix)" DllEntry="ExecHttpSniSslCerts" Execute="deferred" Impersonate="no" Return="check" SuppressModularization="yes" />
+
+        <!--
+            We need HTTP.SYS on Windows 8 or later for SNI SSL support.
+        -->
+        <InstallExecuteSequence>
+            <Custom Action="WixSchedHttpSniSslCertsUninstall$(var.Suffix)" Before="RemoveFiles" Overridable="yes">
+                <![CDATA[ VersionNT >= 602 ]]>
+            </Custom>
+            <Custom Action="WixSchedHttpSniSslCertsInstall$(var.Suffix)" After="InstallFiles" Overridable="yes">
+                <![CDATA[ VersionNT >= 602 ]]>
+            </Custom>
+        </InstallExecuteSequence>
+    </Fragment>
+
     <Fragment>
         <Binary Id="WixHttpCA$(var.Suffix)" SourceFile="!(bindpath.$(var.platform))wixhttpca.dll" />
     </Fragment>

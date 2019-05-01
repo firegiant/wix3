@@ -15,6 +15,114 @@
 
   <xs:import namespace="http://schemas.microsoft.com/wix/2006/wi" />
 
+
+  <xs:element name="SniSslCertificae">
+    <xs:annotation>
+      <xs:documentation>
+        Configures a SNI SSL certificate for the HTTP Server API on Windows 8.0, and later.
+        The certificate must exist in the per-machine certificate store.
+        For more information about the HTTP Server API, see
+        <html:a href="http://msdn.microsoft.com/library/windows/desktop/aa364510.aspx">
+          HTTP Server API
+        </html:a>.
+      </xs:documentation>
+      <xs:appinfo>
+        <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Component" />
+      </xs:appinfo>
+    </xs:annotation>
+
+    <xs:complexType>
+      <xs:attribute name="HandleExisting">
+        <xs:annotation>
+          <xs:documentation>
+            Specifies the behavior when trying to install a SNI SSL certificate configuration and it already exists.
+          </xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:NMTOKEN">
+            <xs:enumeration value="replace">
+              <xs:annotation>
+                <xs:documentation>
+                  Replaces the existing SNI SSL certificate configuration (the default).
+                </xs:documentation>
+              </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ignore">
+              <xs:annotation>
+                <xs:documentation>
+                  Keeps the existing SNI SSL certificate configuration.
+                </xs:documentation>
+              </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fail">
+              <xs:annotation>
+                <xs:documentation>
+                  The installation fails.
+                </xs:documentation>
+              </xs:annotation>
+            </xs:enumeration>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+
+      <xs:attribute name="Host" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            Host name to associate the SNI SSL certificate to.
+            This value may be a Formatted property that resolves to the hostname.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="Id" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Unique ID of this SNI SSL certificate configuration.
+            If this attribute is not specified, an identifier will be generated automatically.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="Port" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            Port number to associate the SNI SSL certificate to.
+            Allowed values are postive numbers or a Formatted property that resolves to a positive number.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="Thumbprint" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            The hexadecimal certificate thumbprint to associate with this SNI SSL certficate configuration.
+            This value may be a Formatted property that resolves to a hexadecimal certificate thumbprint.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="AppId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            The application identifier GUID to associate with this SNI SSL certficate configuration.
+            This value may be a Formatted property that resolves to a GUID.
+            If this attribute is not present a GUID will be generated at install time.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="Store" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            The per-machine certificate store where to find the SNI SSL certificate.
+            The value may be a Formatted property that resolves to a valid certificate store.
+            If this attribute is not present the per-machine "MY" certificate store will be used.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="UrlReservation">
     <xs:annotation>
       <xs:documentation>
