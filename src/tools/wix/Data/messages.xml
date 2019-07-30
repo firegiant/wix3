@@ -2414,7 +2414,7 @@
         </Message>
         <Message Id="FinishCabFailed" Number="306" SourceLineNumbers="no">
             <Instance>
-                An error (E_FAIL) was returned while finalizing a CAB file. This most commonly happens when creating a CAB file with more than 65535 files in it. Either reduce the number of files in your installation package or split your installation package's files into more than one CAB file using the Media element.
+                An error (E_FAIL) was returned while finalizing a CAB file. This most commonly happens when creating a CAB file with more than 65535 files in it or a compressed size greater than 2GB. Either reduce the number of files in your installation package or split your installation package's files into more than one CAB file using the Media element.
             </Instance>
         </Message>
         <Message Id="InvalidExtensionType" Number="307" SourceLineNumbers="no">
