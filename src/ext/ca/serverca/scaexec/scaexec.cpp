@@ -1714,6 +1714,117 @@ static void SetUserPasswordAndAttributes(
 }
 
 
+static HRESULT RemoveUserInternal(
+    LPWSTR wzGroupCaData,
+    LPWSTR wzDomain,
+    LPWSTR wzName,
+    int iAttributes
+    )
+{
+    HRESULT hr = S_OK;
+    UINT er = ERROR_SUCCESS;
+
+    LPWSTR pwz = NULL;
+    LPWSTR pwzGroup = NULL;
+    LPWSTR pwzGroupDomain = NULL;
+    LPCWSTR wz = NULL;
+    PDOMAIN_CONTROLLER_INFOW pDomainControllerInfo = NULL;
+
+    //
+    // Remove the logon as service privilege.
+    //
+    if (SCAU_ALLOW_LOGON_AS_SERVICE & iAttributes)
+    {
+        hr = ModifyUserLocalServiceRight(wzDomain, wzName, FALSE);
+        if (FAILED(hr))
+        {
+            WcaLogError(hr, "Failed to remove logon as service right from user, continuing...");
+            hr = S_OK;
+        }
+    }
+
+    if (SCAU_ALLOW_LOGON_AS_BATCH & iAttributes)
+    {
+        hr = ModifyUserLocalBatchRight(wzDomain, wzName, FALSE);
+        if (FAILED(hr))
+        {
+            WcaLogError(hr, "Failed to remove logon as batch job right from user, continuing...");
+            hr = S_OK;
+        }
+    }
+
+    //
+    // Remove the User Account if the user was created by us.
+    //
+    if (!(SCAU_DONT_CREATE_USER & iAttributes))
+    {
+        if (wzDomain && *wzDomain)
+        {
+            er = ::DsGetDcNameW( NULL, (LPCWSTR)wzDomain, NULL, NULL, NULL, &pDomainControllerInfo );
+            if (RPC_S_SERVER_UNAVAILABLE == er)
+            {
+                // MSDN says, if we get the above error code, try again with the "DS_FORCE_REDISCOVERY" flag
+                er = ::DsGetDcNameW( NULL, (LPCWSTR)wzDomain, NULL, NULL, DS_FORCE_REDISCOVERY, &pDomainControllerInfo );
+            }
+            if (ERROR_SUCCESS == er)
+            {
+                wz = pDomainControllerInfo->DomainControllerName + 2;  //Add 2 so that we don't get the \\ prefix
+            }
+            else
+            {
+                wz = wzDomain;
+            }
+        }
+
+        er = ::NetUserDel(wz, wzName);
+        if (NERR_UserNotFound == er)
+        {
+            er = NERR_Success;
+        }
+        ExitOnFailure1(hr = HRESULT_FROM_WIN32(er), "failed to delete user account: %ls", wzName);
+    }
+    else
+    {
+        //
+        // Remove the user from the groups
+        //
+        pwz = wzGroupCaData;
+        while (S_OK == (hr = WcaReadStringFromCaData(&pwz, &pwzGroup)))
+        {
+            hr = WcaReadStringFromCaData(&pwz, &pwzGroupDomain);
+
+            if (FAILED(hr))
+            {
+                WcaLogError(hr, "failed to get domain for group: %ls, continuing anyway.", pwzGroup);
+            }
+            else
+            {
+                hr = RemoveUserFromGroup(wzName, wzDomain, pwzGroup, pwzGroupDomain);
+                if (FAILED(hr))
+                {
+                    WcaLogError(hr, "failed to remove user: %ls from group %ls, continuing anyway.", wzName, pwzGroup);
+                }
+            }
+        }
+
+        if (E_NOMOREITEMS == hr) // if there are no more items, all is well
+        {
+            hr = S_OK;
+        }
+
+        ExitOnFailure1(hr, "failed to get next group from which to remove user:%ls", wzName);
+    }
+
+LExit:
+    if (pDomainControllerInfo)
+    {
+        ::NetApiBufferFree(static_cast<LPVOID>(pDomainControllerInfo));
+    }
+    
+    return hr;
+}
+
+
 /********************************************************************
  CreateUser - CUSTOM ACTION ENTRY POINT for creating users
 
@@ -1898,6 +2009,72 @@ LExit:
 
 
 /********************************************************************
+ CreateUserRollback - CUSTOM ACTION ENTRY POINT for CreateUser rollback
+
+ * *****************************************************************/
+extern "C" UINT __stdcall CreateUserRollback(
+    MSIHANDLE hInstall
+    )
+{
+    //AssertSz(0, "Debug CreateUserRollback");
+
+    HRESULT hr = S_OK;
+    UINT er = ERROR_SUCCESS;
+
+    LPWSTR pwzData = NULL;
+    LPWSTR pwz = NULL;
+    LPWSTR pwzName = NULL;
+    LPWSTR pwzDomain = NULL;
+    int iAttributes = 0;
+    BOOL fInitializedCom = FALSE;
+
+    hr = WcaInitialize(hInstall, "CreateUserRollback");
+    ExitOnFailure(hr, "failed to initialize");
+
+    hr = ::CoInitialize(NULL);
+    ExitOnFailure(hr, "failed to initialize COM");
+    fInitializedCom = TRUE;
+
+    hr = WcaGetProperty(L"CustomActionData", &pwzData);
+    ExitOnFailure(hr, "failed to get CustomActionData");
+
+    WcaLog(LOGMSG_TRACEONLY, "CustomActionData: %ls", pwzData);
+
+    //
+    // Read in the CustomActionData
+    //
+    pwz = pwzData;
+    hr = WcaReadStringFromCaData(&pwz, &pwzName);
+    ExitOnFailure(hr, "failed to read name from custom action data");
+
+    hr = WcaReadStringFromCaData(&pwz, &pwzDomain);
+    ExitOnFailure(hr, "failed to read domain from custom action data");
+
+    hr = WcaReadIntegerFromCaData(&pwz, &iAttributes);
+    ExitOnFailure(hr, "failed to read attributes from custom action data");
+    
+    hr = RemoveUserInternal(pwz, pwzDomain, pwzName, iAttributes);
+
+LExit:
+    ReleaseStr(pwzData);
+    ReleaseStr(pwzName);
+    ReleaseStr(pwzDomain);
+
+    if (fInitializedCom)
+    {
+        ::CoUninitialize();
+    }
+
+    if (FAILED(hr))
+    {
+        er = ERROR_INSTALL_FAILURE;
+    }
+
+    return WcaFinalize(er);
+}
+
+
+/********************************************************************
  RemoveUser - CUSTOM ACTION ENTRY POINT for removing users
 
   Input:  deferred CustomActionData - Name\tDomain
@@ -1906,7 +2083,7 @@ extern "C" UINT __stdcall RemoveUser(
     MSIHANDLE hInstall
     )
 {
-    //AssertSz(0, "Debug RemoveAccount");
+    //AssertSz(0, "Debug RemoveUser");
 
     HRESULT hr = S_OK;
     UINT er = ERROR_SUCCESS;
@@ -1914,12 +2091,8 @@ extern "C" UINT __stdcall RemoveUser(
     LPWSTR pwzData = NULL;
     LPWSTR pwz = NULL;
     LPWSTR pwzName = NULL;
-    LPWSTR pwzDomain= NULL;
-    LPWSTR pwzGroup = NULL;
-    LPWSTR pwzGroupDomain = NULL;
+    LPWSTR pwzDomain = NULL;
     int iAttributes = 0;
-    LPCWSTR wz = NULL;
-    PDOMAIN_CONTROLLER_INFOW pDomainControllerInfo = NULL;
     BOOL fInitializedCom = FALSE;
 
     hr = WcaInitialize(hInstall, "RemoveUser");
@@ -1946,97 +2119,10 @@ extern "C" UINT __stdcall RemoveUser(
 
     hr = WcaReadIntegerFromCaData(&pwz, &iAttributes);
     ExitOnFailure(hr, "failed to read attributes from custom action data");
-
-    //
-    // Remove the logon as service privilege.
-    //
-    if (SCAU_ALLOW_LOGON_AS_SERVICE & iAttributes)
-    {
-        hr = ModifyUserLocalServiceRight(pwzDomain, pwzName, FALSE);
-        if (FAILED(hr))
-        {
-            WcaLogError(hr, "Failed to remove logon as service right from user, continuing...");
-            hr = S_OK;
-        }
-    }
-
-    if (SCAU_ALLOW_LOGON_AS_BATCH & iAttributes)
-    {
-        hr = ModifyUserLocalBatchRight(pwzDomain, pwzName, FALSE);
-        if (FAILED(hr))
-        {
-            WcaLogError(hr, "Failed to remove logon as batch job right from user, continuing...");
-            hr = S_OK;
-        }
-    }
-
-    //
-    // Remove the User Account if the user was created by us.
-    //
-    if (!(SCAU_DONT_CREATE_USER & iAttributes))
-    {
-        if (pwzDomain && *pwzDomain)
-        {
-            er = ::DsGetDcNameW( NULL, (LPCWSTR)pwzDomain, NULL, NULL, NULL, &pDomainControllerInfo );
-            if (RPC_S_SERVER_UNAVAILABLE == er)
-            {
-                // MSDN says, if we get the above error code, try again with the "DS_FORCE_REDISCOVERY" flag
-                er = ::DsGetDcNameW( NULL, (LPCWSTR)pwzDomain, NULL, NULL, DS_FORCE_REDISCOVERY, &pDomainControllerInfo );
-            }
-            if (ERROR_SUCCESS == er)
-            {
-                wz = pDomainControllerInfo->DomainControllerName + 2;  //Add 2 so that we don't get the \\ prefix
-            }
-            else
-            {
-                wz = pwzDomain;
-            }
-        }
-
-        er = ::NetUserDel(wz, pwzName);
-        if (NERR_UserNotFound == er)
-        {
-            er = NERR_Success;
-        }
-        ExitOnFailure1(hr = HRESULT_FROM_WIN32(er), "failed to delete user account: %ls", pwzName);
-    }
-    else
-    {
-        //
-        // Remove the user from the groups
-        //
-        while (S_OK == (hr = WcaReadStringFromCaData(&pwz, &pwzGroup)))
-        {
-            hr = WcaReadStringFromCaData(&pwz, &pwzGroupDomain);
-
-            if (FAILED(hr))
-            {
-                WcaLogError(hr, "failed to get domain for group: %ls, continuing anyway.", pwzGroup);
-            }
-            else
-            {
-                hr = RemoveUserFromGroup(pwzName, pwzDomain, pwzGroup, pwzGroupDomain);
-                if (FAILED(hr))
-                {
-                    WcaLogError(hr, "failed to remove user: %ls from group %ls, continuing anyway.", pwzName, pwzGroup);
-                }
-            }
-        }
-
-        if (E_NOMOREITEMS == hr) // if there are no more items, all is well
-        {
-            hr = S_OK;
-        }
-
-        ExitOnFailure1(hr, "failed to get next group from which to remove user:%ls", pwzName);
-    }
+    
+    hr = RemoveUserInternal(pwz, pwzDomain, pwzName, iAttributes);
 
 LExit:
-    if (pDomainControllerInfo)
-    {
-        ::NetApiBufferFree(static_cast<LPVOID>(pDomainControllerInfo));
-    }
-
     ReleaseStr(pwzData);
     ReleaseStr(pwzName);
     ReleaseStr(pwzDomain);
@@ -2053,6 +2139,8 @@ LExit:
 
     return WcaFinalize(er);
 }
+
+
 /********************************************************************
  WriteIIS7ConfigChanges - CUSTOM ACTION ENTRY POINT for IIS7 config changes
 

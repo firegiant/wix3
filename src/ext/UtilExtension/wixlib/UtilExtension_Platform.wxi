@@ -42,7 +42,7 @@
 
     <CustomAction Id="ConfigureUsers$(var.Suffix)" BinaryKey="ScaSchedule$(var.Suffix)" DllEntry="ConfigureUsers" Execute="immediate" Return="check" SuppressModularization="yes" />
     <CustomAction Id="CreateUser$(var.DeferredSuffix)" BinaryKey="ScaExecute$(var.Suffix)" DllEntry="CreateUser" Impersonate="no" Execute="deferred" Return="check" HideTarget="yes" SuppressModularization="yes" />
-    <CustomAction Id="CreateUserRollback$(var.DeferredSuffix)" BinaryKey="ScaExecute$(var.Suffix)" DllEntry="RemoveUser" Impersonate="no" Execute="rollback" Return="check" HideTarget="yes" SuppressModularization="yes" />
+    <CustomAction Id="CreateUserRollback$(var.DeferredSuffix)" BinaryKey="ScaExecute$(var.Suffix)" DllEntry="CreateUserRollback" Impersonate="no" Execute="rollback" Return="check" HideTarget="yes" SuppressModularization="yes" />
     <!-- RemoveUser is a type commit action because it is not possible to rollback the removal of a user -->
     <CustomAction Id="RemoveUser$(var.DeferredSuffix)" BinaryKey="ScaExecute$(var.Suffix)" DllEntry="RemoveUser" Impersonate="no" Execute="commit" Return="ignore" HideTarget="yes" SuppressModularization="yes" />
 
