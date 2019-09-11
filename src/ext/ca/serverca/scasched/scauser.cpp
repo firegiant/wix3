@@ -587,6 +587,10 @@ HRESULT ScaUserExecute(
                     iRollbackUserAttributes &= ~SCAU_DONT_CREATE_USER;
                 }
 
+                // The deferred CA determines when to rollback User Rights Assignments so these should never be set.
+                iRollbackUserAttributes &= ~SCAU_ALLOW_LOGON_AS_SERVICE;
+                iRollbackUserAttributes &= ~SCAU_ALLOW_LOGON_AS_BATCH;
+
                 hr = WcaWriteStringToCaData(psu->wzName, &pwzRollbackData);
                 ExitOnFailure1(hr, "Failed to add user name to rollback custom action data: %ls", psu->wzName);
                 hr = WcaWriteStringToCaData(psu->wzDomain, &pwzRollbackData);

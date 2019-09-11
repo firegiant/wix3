@@ -1540,6 +1540,108 @@ LExit:
     return hr;
 }
 
+static HRESULT GetUserHasRight(
+    __in LSA_HANDLE hPolicy,
+    __in PSID pUserSid,
+    __in LPWSTR wzRight,
+    __out BOOL* fHasRight
+    )
+{
+    HRESULT hr = S_OK;
+    NTSTATUS nt = 0;
+    LSA_UNICODE_STRING lucPrivilege = { 0 };
+    PLSA_ENUMERATION_INFORMATION rgSids = NULL;
+    ULONG cSids = 0;
+    *fHasRight = FALSE;
+
+    lucPrivilege.Buffer = wzRight;
+    lucPrivilege.Length = static_cast<USHORT>(lstrlenW(lucPrivilege.Buffer) * sizeof(WCHAR));
+    lucPrivilege.MaximumLength = (lucPrivilege.Length + 1) * sizeof(WCHAR);
+
+    nt = ::LsaEnumerateAccountsWithUserRight(hPolicy, &lucPrivilege, reinterpret_cast<PVOID*>(&rgSids), &cSids);
+    hr = HRESULT_FROM_WIN32(::LsaNtStatusToWinError(nt));
+    ExitOnFailure1(hr, "Failed to enumerate users for right: %ls", lucPrivilege.Buffer);
+
+    for (DWORD i = 0; i < cSids; ++i)
+    {
+        PLSA_ENUMERATION_INFORMATION pInfo = rgSids + i;
+        if (::EqualSid(pUserSid, pInfo->Sid))
+        {
+            *fHasRight = TRUE;
+            break;
+        }
+    }
+
+LExit:
+    if (rgSids)
+    {
+        ::LsaFreeMemory(rgSids);
+    }
+
+    return hr;
+}
+
+static HRESULT GetExistingUserRightsAssignments(
+    __in_opt LPCWSTR wzDomain,
+    __in LPCWSTR wzName,
+    __inout int* iAttributes
+    )
+{
+    HRESULT hr = S_OK;
+    NTSTATUS nt = 0;
+    BOOL fHasRight = FALSE;
+
+    LSA_HANDLE hPolicy = NULL;
+    LSA_OBJECT_ATTRIBUTES objectAttributes = { 0 };  
+
+    LPWSTR pwzUser = NULL;
+    PSID psid = NULL;
+
+    if (wzDomain && *wzDomain)
+    {
+        hr = StrAllocFormatted(&pwzUser, L"%s\\%s", wzDomain, wzName);
+        ExitOnFailure(hr, "Failed to allocate user with domain string");
+    }
+    else
+    {
+        hr = StrAllocString(&pwzUser, wzName, 0);
+        ExitOnFailure(hr, "Failed to allocate string from user name.");
+    }
+
+    hr = AclGetAccountSid(NULL, pwzUser, &psid);
+    ExitOnFailure1(hr, "Failed to get SID for user: %ls", pwzUser);
+
+    nt = ::LsaOpenPolicy(NULL, &objectAttributes, POLICY_LOOKUP_NAMES | POLICY_VIEW_LOCAL_INFORMATION, &hPolicy);
+    hr = HRESULT_FROM_WIN32(::LsaNtStatusToWinError(nt));
+    ExitOnFailure(hr, "Failed to open LSA policy store");
+
+    hr = GetUserHasRight(hPolicy, psid, L"SeServiceLogonRight", &fHasRight);
+    ExitOnFailure(hr, "Failed to check LogonAsService right");
+
+    if (fHasRight)
+    {
+        *iAttributes |= SCAU_ALLOW_LOGON_AS_SERVICE;
+    }
+
+    hr = GetUserHasRight(hPolicy, psid, L"SeBatchLogonRight", &fHasRight);
+    ExitOnFailure(hr, "Failed to check LogonAsBatchJob right");
+
+    if (fHasRight)
+    {
+        *iAttributes |= SCAU_ALLOW_LOGON_AS_BATCH;
+    }
+
+LExit:
+    if (hPolicy)
+    {
+        ::LsaClose(hPolicy);
+    }
+
+    ReleaseSid(psid);
+    ReleaseStr(pwzUser);
+    return hr;
+}
+
 
 static HRESULT ModifyUserLocalServiceRight(
     __in_opt LPCWSTR wzDomain,
@@ -1850,6 +1952,10 @@ extern "C" UINT __stdcall CreateUser(
     PDOMAIN_CONTROLLER_INFOW pDomainControllerInfo = NULL;
     int iAttributes = 0;
     BOOL fInitializedCom = FALSE;
+    
+    WCA_CASCRIPT_HANDLE hRollbackScript = NULL;
+    int iOriginalAttributes = 0;
+    int iRollbackAttributes = 0;
 
     USER_INFO_1 userInfo;
     USER_INFO_1* puserInfo = NULL;
@@ -1886,6 +1992,38 @@ extern "C" UINT __stdcall CreateUser(
 
     hr = WcaReadStringFromCaData(&pwz, &pwzPassword);
     ExitOnFailure(hr, "failed to read password from custom action data");
+    
+    // There is no rollback scheduled if the key is empty.
+    // Best effort to get original configuration and save it in the script so rollback can restore it.
+    if (*pwzScriptKey)
+    {
+        hr = WcaCaScriptCreate(WCA_ACTION_INSTALL, WCA_CASCRIPT_ROLLBACK, FALSE, pwzScriptKey, FALSE, &hRollbackScript);
+        ExitOnFailure(hr, "Failed to open rollback CustomAction script.");
+
+        iRollbackAttributes = 0;
+        hr = GetExistingUserRightsAssignments(pwzDomain, pwzName, &iOriginalAttributes);
+        if (FAILED(hr))
+        {
+            WcaLogError(hr, "failed to get existing user rights: %ls, continuing anyway.", pwzName);
+        }
+        else
+        {
+            if (!(SCAU_ALLOW_LOGON_AS_SERVICE & iOriginalAttributes) && (SCAU_ALLOW_LOGON_AS_SERVICE & iAttributes))
+            {
+                iRollbackAttributes |= SCAU_ALLOW_LOGON_AS_SERVICE;
+            }
+            if (!(SCAU_ALLOW_LOGON_AS_BATCH & iOriginalAttributes) && (SCAU_ALLOW_LOGON_AS_BATCH & iAttributes))
+            {
+                iRollbackAttributes |= SCAU_ALLOW_LOGON_AS_BATCH;
+            }
+        }
+
+        hr = WcaCaScriptWriteNumber(hRollbackScript, iRollbackAttributes);
+        ExitOnFailure(hr, "Failed to add data to rollback script.");
+
+        // Nudge the system to get all our rollback data written to disk.
+        WcaCaScriptFlush(hRollbackScript);
+    }
 
     if (!(SCAU_DONT_CREATE_USER & iAttributes))
     {
@@ -1977,6 +2115,8 @@ extern "C" UINT __stdcall CreateUser(
     ExitOnFailure1(hr, "failed to get next group in which to include user:%ls", pwzName);
 
 LExit:
+    WcaCaScriptClose(hRollbackScript, WCA_CASCRIPT_CLOSE_PRESERVE);
+
     if (puserInfo)
     {
         ::NetApiBufferFree((LPVOID)puserInfo);
@@ -2033,6 +2173,10 @@ extern "C" UINT __stdcall CreateUserRollback(
     LPWSTR pwzScriptKey = NULL;
     int iAttributes = 0;
     BOOL fInitializedCom = FALSE;
+    
+    WCA_CASCRIPT_HANDLE hRollbackScript = NULL;
+    LPWSTR pwzRollbackData = NULL;
+    int iOriginalAttributes = 0;
 
     hr = WcaInitialize(hInstall, "CreateUserRollback");
     ExitOnFailure(hr, "failed to initialize");
@@ -2062,13 +2206,46 @@ extern "C" UINT __stdcall CreateUserRollback(
     hr = WcaReadIntegerFromCaData(&pwz, &iAttributes);
     ExitOnFailure(hr, "failed to read attributes from custom action data");
     
+    // Best effort to read original configuration from CreateUser.
+    hr = WcaCaScriptOpen(WCA_ACTION_INSTALL, WCA_CASCRIPT_ROLLBACK, FALSE, pwzScriptKey, &hRollbackScript);
+    if (FAILED(hr))
+    {
+        WcaLogError(hr, "Failed to open rollback CustomAction script, continuing anyway.");
+    }
+    else
+    {
+        hr = WcaCaScriptReadAsCustomActionData(hRollbackScript, &pwzRollbackData);
+        if (FAILED(hr))
+        {
+            WcaLogError(hr, "Failed to read rollback script into CustomAction data, continuing anyway.");
+        }
+        else
+        {
+            WcaLog(LOGMSG_TRACEONLY, "Rollback Data: %ls", pwzRollbackData);
+
+            pwz = pwzRollbackData;
+            hr = WcaReadIntegerFromCaData(&pwz, &iOriginalAttributes);
+            if (FAILED(hr))
+            {
+                WcaLogError(hr, "failed to read attributes from rollback data, continuing anyway");
+            }
+            else
+            {
+                iAttributes |= iOriginalAttributes;
+            }
+        }
+    }
+    
     hr = RemoveUserInternal(pwz, pwzDomain, pwzName, iAttributes);
 
 LExit:
+    WcaCaScriptClose(hRollbackScript, WCA_CASCRIPT_CLOSE_DELETE);
+
     ReleaseStr(pwzData);
     ReleaseStr(pwzName);
     ReleaseStr(pwzDomain);
     ReleaseStr(pwzScriptKey);
+    ReleaseStr(pwzRollbackData);
 
     if (fInitializedCom)
     {
