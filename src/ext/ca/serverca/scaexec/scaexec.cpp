@@ -1843,6 +1843,7 @@ extern "C" UINT __stdcall CreateUser(
     LPWSTR pwz = NULL;
     LPWSTR pwzName = NULL;
     LPWSTR pwzDomain = NULL;
+    LPWSTR pwzScriptKey = NULL;
     LPWSTR pwzPassword = NULL;
     LPWSTR pwzGroup = NULL;
     LPWSTR pwzGroupDomain = NULL;
@@ -1879,6 +1880,9 @@ extern "C" UINT __stdcall CreateUser(
 
     hr = WcaReadIntegerFromCaData(&pwz, &iAttributes);
     ExitOnFailure(hr, "failed to read attributes from custom action data");
+
+    hr = WcaReadStringFromCaData(&pwz, &pwzScriptKey);
+    ExitOnFailure(hr, "failed to read encoding key from custom action data");
 
     hr = WcaReadStringFromCaData(&pwz, &pwzPassword);
     ExitOnFailure(hr, "failed to read password from custom action data");
@@ -1986,6 +1990,7 @@ LExit:
     ReleaseStr(pwzData);
     ReleaseStr(pwzName);
     ReleaseStr(pwzDomain);
+    ReleaseStr(pwzScriptKey);
     ReleaseStr(pwzPassword);
     ReleaseStr(pwzGroup);
     ReleaseStr(pwzGroupDomain);
@@ -2025,6 +2030,7 @@ extern "C" UINT __stdcall CreateUserRollback(
     LPWSTR pwz = NULL;
     LPWSTR pwzName = NULL;
     LPWSTR pwzDomain = NULL;
+    LPWSTR pwzScriptKey = NULL;
     int iAttributes = 0;
     BOOL fInitializedCom = FALSE;
 
@@ -2044,6 +2050,9 @@ extern "C" UINT __stdcall CreateUserRollback(
     // Read in the CustomActionData
     //
     pwz = pwzData;
+    hr = WcaReadStringFromCaData(&pwz, &pwzScriptKey);
+    ExitOnFailure(hr, "failed to read encoding key from custom action data");
+
     hr = WcaReadStringFromCaData(&pwz, &pwzName);
     ExitOnFailure(hr, "failed to read name from custom action data");
 
@@ -2059,6 +2068,7 @@ LExit:
     ReleaseStr(pwzData);
     ReleaseStr(pwzName);
     ReleaseStr(pwzDomain);
+    ReleaseStr(pwzScriptKey);
 
     if (fInitializedCom)
     {
