@@ -39,5 +39,6 @@ EXPORTS
 
 ; User entry points
     CreateUser
+    CreateUserRollback
     RemoveUser
 
