@@ -77,6 +77,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <CallingConvention>StdCall</CallingConvention>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>false</ExceptionHandling>
       <AdditionalOptions>-YlprecompDefine</AdditionalOptions>
@@ -152,6 +153,9 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition=" '$(CLRSupport)'=='true' ">
+    <ClCompile>
+      <ControlFlowGuard></ControlFlowGuard>
+    </ClCompile>
     <Link>
       <KeyFile>$(LinkKeyFile)</KeyFile>
       <DelaySign>$(LinkDelaySign)</DelaySign>
