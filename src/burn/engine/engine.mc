@@ -884,3 +884,11 @@ SymbolicName=MSG_LAUNCH_APPROVED_EXE_COMPLETE
 Language=English
 LaunchApprovedExe complete, result: 0x%1!x!, processId: %2!lu!
 .
+
+MessageId=700
+Severity=Warning
+SymbolicName=MSG_PENDING_REBOOT_DETECTED
+Language=English
+A reboot is pending from a prior execution of this bundle: %1!ls!. Apply will be blocked. Continuing...
+.
+

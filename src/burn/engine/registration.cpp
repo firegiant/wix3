@@ -500,6 +500,7 @@ extern "C" HRESULT RegistrationDetectResumeType(
     hr = RegOpen(pRegistration->hkRoot, sczRebootRequiredKey, KEY_QUERY_VALUE, &hkRebootRequired);
     if (SUCCEEDED(hr))
     {
+        LogId(REPORT_STANDARD, MSG_PENDING_REBOOT_DETECTED, sczRebootRequiredKey);
         *pResumeType = BOOTSTRAPPER_RESUME_TYPE_REBOOT_PENDING;
         ExitFunction1(hr = S_OK);
     }
