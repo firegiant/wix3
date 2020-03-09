@@ -2402,12 +2402,15 @@ extern "C" UINT __stdcall CommitIIS7ConfigTransaction(MSIHANDLE hInstall)
     WCHAR wzConfigCopy[MAX_PATH];
     DWORD dwSize = 0;
 
+#ifndef _WIN64
     BOOL fIsWow64Process = FALSE;
     BOOL fIsFSRedirectDisabled = FALSE;
+#endif
 
     hr = WcaInitialize(hInstall, "CommitIIS7ConfigTransaction");
     ExitOnFailure(hr, "failed to initialize IIS7 commit transaction");
 
+#ifndef _WIN64
     WcaInitializeWow64();
     fIsWow64Process = WcaIsWow64Process();
     if (fIsWow64Process)
@@ -2423,6 +2426,7 @@ extern "C" UINT __stdcall CommitIIS7ConfigTransaction(MSIHANDLE hInstall)
             fIsFSRedirectDisabled = TRUE;
         }
     }
+#endif
 
     hr = WcaGetProperty( L"CustomActionData", &pwzData);
     ExitOnFailure(hr, "failed to get CustomActionData");
@@ -2463,6 +2467,7 @@ extern "C" UINT __stdcall CommitIIS7ConfigTransaction(MSIHANDLE hInstall)
 LExit:
     ReleaseStr(pwzData);
 
+#ifndef _WIN64
     // Make sure we revert FS Redirection if necessary before exiting
     if (fIsFSRedirectDisabled)
     {
@@ -2470,7 +2475,7 @@ LExit:
         WcaRevertWow64FSRedirection();
     }
     WcaFinalizeWow64();
-
+#endif
 
     if (FAILED(hr))
     {
@@ -2492,14 +2497,16 @@ extern "C" UINT __stdcall StartIIS7ConfigTransaction(MSIHANDLE hInstall)
     WCHAR wzConfigCopy[MAX_PATH];
     DWORD dwSize = 0;
 
-
+#ifndef _WIN64
     BOOL fIsWow64Process = FALSE;
     BOOL fIsFSRedirectDisabled = FALSE;
+#endif
 
     // initialize
     hr = WcaInitialize(hInstall, "StartIIS7ConfigTransaction");
     ExitOnFailure(hr, "failed to initialize StartIIS7ConfigTransaction");
 
+#ifndef _WIN64
     WcaInitializeWow64();
     fIsWow64Process = WcaIsWow64Process();
     if (fIsWow64Process)
@@ -2515,6 +2522,7 @@ extern "C" UINT __stdcall StartIIS7ConfigTransaction(MSIHANDLE hInstall)
             fIsFSRedirectDisabled = TRUE;
         }
     }
+#endif
 
     hr = WcaGetProperty(L"CustomActionData", &pwzData);
     ExitOnFailure(hr, "failed to get CustomActionData");
@@ -2555,14 +2563,13 @@ extern "C" UINT __stdcall StartIIS7ConfigTransaction(MSIHANDLE hInstall)
         }
     }
 
-
     hr = WcaProgressMessage(COST_IIS_TRANSACTIONS, FALSE);
-
 
 LExit:
 
     ReleaseStr(pwzData);
 
+#ifndef _WIN64
     // Make sure we revert FS Redirection if necessary before exiting
     if (fIsFSRedirectDisabled)
     {
@@ -2570,6 +2577,7 @@ LExit:
         WcaRevertWow64FSRedirection();
     }
     WcaFinalizeWow64();
+#endif
 
     if (FAILED(hr))
         er = ERROR_INSTALL_FAILURE;
@@ -2591,12 +2599,15 @@ extern "C" UINT __stdcall RollbackIIS7ConfigTransaction(MSIHANDLE hInstall)
     WCHAR wzConfigCopy[MAX_PATH];
     DWORD dwSize = 0;
 
+#ifndef _WIN64
     BOOL fIsWow64Process = FALSE;
     BOOL fIsFSRedirectDisabled = FALSE;
+#endif
 
     hr = WcaInitialize(hInstall, "RollbackIIS7ConfigTransaction");
     ExitOnFailure(hr, "failed to initialize");
 
+#ifndef _WIN64
     WcaInitializeWow64();
     fIsWow64Process = WcaIsWow64Process();
     if (fIsWow64Process)
@@ -2612,6 +2623,7 @@ extern "C" UINT __stdcall RollbackIIS7ConfigTransaction(MSIHANDLE hInstall)
             fIsFSRedirectDisabled = TRUE;
         }
     }
+#endif
 
     hr = WcaGetProperty( L"CustomActionData", &pwzData);
     ExitOnFailure(hr, "failed to get CustomActionData");
@@ -2661,6 +2673,7 @@ extern "C" UINT __stdcall RollbackIIS7ConfigTransaction(MSIHANDLE hInstall)
 LExit:
     ReleaseStr(pwzData);
 
+#ifndef _WIN64
     // Make sure we revert FS Redirection if necessary before exiting
     if (fIsFSRedirectDisabled)
     {
@@ -2668,6 +2681,7 @@ LExit:
         WcaRevertWow64FSRedirection();
     }
     WcaFinalizeWow64();
+#endif
 
     if (FAILED(hr))
     {
