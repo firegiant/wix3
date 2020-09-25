@@ -129,11 +129,13 @@ static UINT SchedHttpUrlReservations(
             if (fAceTableExists && WCA_TODO_UNINSTALL != todoComponent)
             {
                 hQueryReq = ::MsiCreateRecord(1);
+                
                 hr = WcaSetRecordString(hQueryReq, 1, sczId);
                 ExitOnFailure1(hr, "Failed to create record for querying WixHttpUrlAce table for reservation %ls", sczId);
 
                 hr = WcaOpenView(vcsHttpUrlAceQuery, &hAceView);
                 ExitOnFailure1(hr, "Failed to open view on WixHttpUrlAce table for reservation %ls", sczId);
+                
                 hr = WcaExecuteView(hAceView, hQueryReq);
                 ExitOnFailure1(hr, "Failed to execute view on WixHttpUrlAce table for reservation %ls", sczId);
 
@@ -166,7 +168,7 @@ static UINT SchedHttpUrlReservations(
         ExitOnFailure1(hr, "Failed to get the existing SDDL for %ls", sczUrl);
 
         hr = WriteHttpUrlReservation(todoComponent, sczUrl, sczExistingSDDL ? sczExistingSDDL : L"", iHandleExisting, &sczRollbackCustomActionData);
-        ExitOnFailure(hr, "Failed to write URL Reservation to rollback custom action data.");
+        ExitOnFailure(hr, "Failed to write URL reservation to rollback custom action data.");
 
         hr = WriteHttpUrlReservation(todoComponent, sczUrl, sczSDDL, iHandleExisting, &sczCustomActionData);
         ExitOnFailure(hr, "Failed to write URL reservation to custom action data.");
@@ -342,6 +344,11 @@ extern "C" UINT __stdcall ExecHttpUrlReservations(
     ExitOnFailure(hr, "Failed to get CustomActionData.");
     WcaLog(LOGMSG_TRACEONLY, "CustomActionData: %ls", sczCustomActionData);
 
+    if (!sczCustomActionData || !*sczCustomActionData)
+    {
+        WcaLog(LOGMSG_STANDARD, "No URL reservations to be executed.");
+    }
+
     wz = sczCustomActionData;
     while (wz && *wz)
     {
@@ -382,7 +389,7 @@ extern "C" UINT __stdcall ExecHttpUrlReservations(
             {
                 if (fRollback)
                 {
-                    WcaLogError(hr, "Failed to remove reservation for URL '%ls'", sczUrl);
+                    WcaLogError(hr, "Failed to remove reservation for rollback for URL '%ls'", sczUrl);
                 }
                 else
                 {
@@ -390,6 +397,7 @@ extern "C" UINT __stdcall ExecHttpUrlReservations(
                 }
             }
         }
+
         if (fAdd)
         {
             WcaLog(LOGMSG_STANDARD, "Adding reservation for URL '%ls' with SDDL '%ls'", sczUrl, sczSDDL);
@@ -402,7 +410,7 @@ extern "C" UINT __stdcall ExecHttpUrlReservations(
             {
                 if (fRollback)
                 {
-                    WcaLogError(hr, "Failed to add reservation for URL '%ls' with SDDL '%ls'", sczUrl, sczSDDL);
+                    WcaLogError(hr, "Failed to add reservation for rollback for URL '%ls' with SDDL '%ls'", sczUrl, sczSDDL);
                 }
                 else
                 {
@@ -463,29 +471,45 @@ static HRESULT GetUrlReservation(
     HTTP_SERVICE_CONFIG_URLACL_SET* pSet = NULL;
     ULONG cbSet = 0;
 
-    query.QueryDesc = HttpServiceConfigQueryExact;
-    query.KeyDesc.pUrlPrefix = wzUrl;
+    // HttpServiceConfigQuery has been unreliable; enumeration isn't as pretty but it's reliable.
+    query.QueryDesc = HttpServiceConfigQueryNext;
+    query.dwToken = 0;
 
-    er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
-    if (ERROR_INSUFFICIENT_BUFFER == er)
+    for (;;)
     {
-        pSet = reinterpret_cast<HTTP_SERVICE_CONFIG_URLACL_SET*>(MemAlloc(cbSet, TRUE));
-        ExitOnNull(pSet, hr, E_OUTOFMEMORY, "Failed to allocate query URLACL buffer.");
-
         er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
-    }
+        if (ERROR_INSUFFICIENT_BUFFER == er)
+        {
+            pSet = reinterpret_cast<HTTP_SERVICE_CONFIG_URLACL_SET*>(MemAlloc(cbSet, TRUE));
+            ExitOnNull(pSet, hr, E_OUTOFMEMORY, "Failed to allocate query URLACL buffer.");
 
-    if (ERROR_SUCCESS == er)
-    {
-        hr = StrAllocString(psczSddl, pSet->ParamDesc.pStringSecurityDescriptor, 0);
-    }
-    else if (ERROR_FILE_NOT_FOUND == er)
-    {
-        hr = S_FALSE;
-    }
-    else
-    {
-        hr = HRESULT_FROM_WIN32(er);
+            er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
+        }
+
+        if (ERROR_SUCCESS == er)
+        {
+            if (CSTR_EQUAL == ::CompareStringW(LOCALE_INVARIANT, 0, wzUrl, -1, pSet->KeyDesc.pUrlPrefix, -1))
+            {
+                hr = StrAllocString(psczSddl, pSet->ParamDesc.pStringSecurityDescriptor, 0);
+                break;
+            }
+
+            ReleaseNullMem(pSet);
+            cbSet = 0;
+
+            ++query.dwToken;
+            continue;
+        }
+        else if (ERROR_NO_MORE_ITEMS == er)
+        {
+            hr = S_OK;
+            break;
+        }
+        else
+        {
+            hr = HRESULT_FROM_WIN32(er);
+            break;
+        }
     }
 
 LExit:
