@@ -320,6 +320,11 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
             {
                 this.Core.OnMessage(WixErrors.ExpectedAttribute(sourceLineNumbers, node.LocalName, "Url"));
             }
+            else if (!url.EndsWith("/"))
+            {
+                // Normalize URL.
+                url = String.Concat(url, "/");
+            }
 
             // Security is required.
             if (null == sddl && !foundACE)
