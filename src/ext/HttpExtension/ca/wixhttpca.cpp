@@ -471,45 +471,29 @@ static HRESULT GetUrlReservation(
     HTTP_SERVICE_CONFIG_URLACL_SET* pSet = NULL;
     ULONG cbSet = 0;
 
-    // HttpServiceConfigQuery has been unreliable; enumeration isn't as pretty but it's reliable.
-    query.QueryDesc = HttpServiceConfigQueryNext;
-    query.dwToken = 0;
+    query.QueryDesc = HttpServiceConfigQueryExact;
+    query.KeyDesc.pUrlPrefix = wzUrl;
 
-    for (;;)
+    er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
+    if (ERROR_INSUFFICIENT_BUFFER == er)
     {
+        pSet = reinterpret_cast<HTTP_SERVICE_CONFIG_URLACL_SET*>(MemAlloc(cbSet, TRUE));
+        ExitOnNull(pSet, hr, E_OUTOFMEMORY, "Failed to allocate query URLACL buffer.");
+
         er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
-        if (ERROR_INSUFFICIENT_BUFFER == er)
-        {
-            pSet = reinterpret_cast<HTTP_SERVICE_CONFIG_URLACL_SET*>(MemAlloc(cbSet, TRUE));
-            ExitOnNull(pSet, hr, E_OUTOFMEMORY, "Failed to allocate query URLACL buffer.");
+    }
 
-            er = ::HttpQueryServiceConfiguration(NULL, HttpServiceConfigUrlAclInfo, &query, sizeof(query), pSet, cbSet, &cbSet, NULL);
-        }
-
-        if (ERROR_SUCCESS == er)
-        {
-            if (CSTR_EQUAL == ::CompareStringW(LOCALE_INVARIANT, 0, wzUrl, -1, pSet->KeyDesc.pUrlPrefix, -1))
-            {
-                hr = StrAllocString(psczSddl, pSet->ParamDesc.pStringSecurityDescriptor, 0);
-                break;
-            }
-
-            ReleaseNullMem(pSet);
-            cbSet = 0;
-
-            ++query.dwToken;
-            continue;
-        }
-        else if (ERROR_NO_MORE_ITEMS == er)
-        {
-            hr = S_OK;
-            break;
-        }
-        else
-        {
-            hr = HRESULT_FROM_WIN32(er);
-            break;
-        }
+    if (ERROR_SUCCESS == er)
+    {
+        hr = StrAllocString(psczSddl, pSet->ParamDesc.pStringSecurityDescriptor, 0);
+    }
+    else if (ERROR_FILE_NOT_FOUND == er)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        hr = HRESULT_FROM_WIN32(er);
     }
 
 LExit:
