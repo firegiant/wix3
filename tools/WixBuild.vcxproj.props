@@ -10,8 +10,6 @@
     <PlatformToolset Condition="$(VS2017Available)">v140</PlatformToolset>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
-    <!-- turn off deprecation warning -->
-    <DisableSpecificCompilerWarnings>$(DisableSpecificCompilerWarnings);4996</DisableSpecificCompilerWarnings>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,10 +20,12 @@
     <PlatformToolset Condition=" $(VS2012Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2012') ">v110_xp</PlatformToolset>
     <PlatformToolset Condition=" $(VS2010Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2010') ">v100</PlatformToolset>
     <ProjectSubSystem Condition=" '$(ProjectSubSystem)'=='' ">Windows</ProjectSubSystem>
-    <!-- VS2015: turn off 'typedef ignored when no variable declared' -->
-    <!-- VS2015: turn off 'declaration hides class member' -->
-    <DisableSpecificCompilerWarnings Condition=" $(PlatformToolset.StartsWith('v14')) ">$(DisableSpecificCompilerWarnings);4091;4458</DisableSpecificCompilerWarnings>
+    <!-- turn off 'typedef ignored when no variable declared' -->
+    <!-- turn off 'declaration hides class member' -->
+    <!-- turn off deprecation warning -->
+    <DisableSpecificCompilerWarnings Condition=" $(PlatformToolset.StartsWith('v14')) ">$(DisableSpecificCompilerWarnings);4091;4458;4996</DisableSpecificCompilerWarnings>
     <XPDeprecationWarning>false</XPDeprecationWarning>
+    <SpectreMitigation>Spectre</SpectreMitigation>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(BuildARM) or $(BuildArm64) ">
@@ -91,8 +91,8 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>false</ExceptionHandling>
-      <AdditionalOptions>-YlprecompDefine</AdditionalOptions>
-      <AdditionalOptions Condition=" $(PlatformToolset.StartsWith('v14')) ">/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/YlprecompDefine</AdditionalOptions>
+      <AdditionalOptions Condition=" $(PlatformToolset.StartsWith('v14')) ">/Zc:threadSafeInit- /ZH:SHA_256 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
