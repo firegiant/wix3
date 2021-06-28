@@ -26,7 +26,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
         private BinderCore core;
         private PayloadInfoRow packagePayload;
 
-        public ChainPackageInfo(Row chainPackageRow, Table wixGroupTable, Dictionary<string, PayloadInfoRow> allPayloads, Dictionary<string, ContainerInfo> containers, BinderFileManager fileManager, BinderCore core, Output bundle) : base(chainPackageRow.SourceLineNumbers, bundle.Tables["ChainPackageInfo"])
+        public ChainPackageInfo(Row chainPackageRow, Table wixGroupTable, Dictionary<string, PayloadInfoRow> allPayloads, Dictionary<string, ContainerInfo> containers, BinderFileManager fileManager, BinderCore core, Output bundle, bool suppressSha1Burn) : base(chainPackageRow.SourceLineNumbers, bundle.Tables["ChainPackageInfo"])
         {
             string id = (string)chainPackageRow[0];
             string packageType = (string)chainPackageRow[1];
@@ -125,8 +125,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
 
             this.Id = id;
             this.ChainPackageType = (Compiler.ChainPackageType)Enum.Parse(typeof(Compiler.ChainPackageType), packageType, true);
-            PayloadInfoRow packagePayload;
-            if (!allPayloads.TryGetValue(payloadId, out packagePayload))
+            if (!allPayloads.TryGetValue(payloadId, out PayloadInfoRow packagePayload))
             {
                 this.core.OnMessage(WixErrors.IdentifierNotFound("Payload", payloadId));
                 return;
@@ -195,7 +194,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             switch (this.ChainPackageType)
             {
                 case Compiler.ChainPackageType.Msi:
-                    this.ResolveMsiPackage(fileManager, allPayloads, containers, suppressLooseFilePayloadGeneration, enableFeatureSelection, forcePerMachine, bundle);
+                    this.ResolveMsiPackage(fileManager, allPayloads, containers, suppressLooseFilePayloadGeneration, enableFeatureSelection, forcePerMachine, bundle, suppressSha1Burn);
                     break;
                 case Compiler.ChainPackageType.Msp:
                     this.ResolveMspPackage(bundle);
@@ -575,7 +574,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
         /// <summary>
         /// Initializes package state from the MSI contents.
         /// </summary>
-        private void ResolveMsiPackage(BinderFileManager fileManager, Dictionary<string, PayloadInfoRow> allPayloads, Dictionary<string, ContainerInfo> containers, YesNoType suppressLooseFilePayloadGeneration, YesNoType enableFeatureSelection, YesNoType forcePerMachine, Output bundle)
+        private void ResolveMsiPackage(BinderFileManager fileManager, Dictionary<string, PayloadInfoRow> allPayloads, Dictionary<string, ContainerInfo> containers, YesNoType suppressLooseFilePayloadGeneration, YesNoType enableFeatureSelection, YesNoType forcePerMachine, Output bundle, bool suppressSha1Burn)
         {
             string sourcePath = this.PackagePayload.FullFileName;
             bool longNamesInImage = false;
@@ -859,7 +858,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                                     string generatedId = Common.GenerateIdentifier("cab", true, this.PackagePayload.Id, cabinet);
                                     string payloadSourceFile = fileManager.ResolveRelatedFile(this.PackagePayload.UnresolvedSourceFile, cabinet, "Cabinet", this.PackagePayload.SourceLineNumbers, BindStage.Normal);
 
-                                    PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, cabinetName, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging);
+                                    PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, cabinetName, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging, suppressSha1Burn);
                                     payloadNew.ParentPackagePayload = this.PackagePayload.Id;
                                     if (!String.IsNullOrEmpty(payloadNew.Container))
                                     {
@@ -930,7 +929,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
 
                                             if (!this.IsExistingPayload(name))
                                             {
-                                                PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, name, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging);
+                                                PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, name, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging, suppressSha1Burn);
                                                 payloadNew.ParentPackagePayload = this.PackagePayload.Id;
                                                 if (!String.IsNullOrEmpty(payloadNew.Container))
                                                 {

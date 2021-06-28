@@ -16,7 +16,7 @@ HRESULT CacheInitialize(
     __in_z_opt LPCWSTR wzSourceProcessPath
     );
 HRESULT CacheEnsureWorkingFolder(
-    __in LPCWSTR wzBundleId,
+    __in_z LPCWSTR wzBundleId,
     __deref_out_z_opt LPWSTR* psczWorkingFolder
     );
 HRESULT CacheCalculateBundleWorkingPath(

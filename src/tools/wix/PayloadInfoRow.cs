@@ -57,7 +57,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
         }
 
         public static PayloadInfoRow Create(SourceLineNumberCollection sourceLineNumbers, Output output, string id, string name, string sourceFile,
-            bool contentFile, bool suppressSignatureValidation, string downloadUrl, string container, PackagingType packaging)
+            bool contentFile, bool suppressSignatureValidation, string downloadUrl, string container, PackagingType packaging, bool suppressSha1Burn)
         {
             Table table = output.Tables["PayloadInfo"];
             PayloadInfoRow row = (PayloadInfoRow)table.CreateRow(sourceLineNumbers);
@@ -71,7 +71,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             row.Container = container;
             row.Packaging = packaging;
 
-            PayloadInfoRow.ResolvePayloadInfo(row);
+            PayloadInfoRow.ResolvePayloadInfo(row, suppressSha1Burn);
             return row;
         }
 
@@ -239,7 +239,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             set { this.Fields[19].Data = value; }
         }
 
-        public void FillFromPayloadRow(Output output, Row payloadRow)
+        public void FillFromPayloadRow(Output output, Row payloadRow, bool suppressSha1Burn)
         {
             SourceLineNumberCollection sourceLineNumbers = payloadRow.SourceLineNumbers;
 
@@ -255,12 +255,12 @@ namespace Microsoft.Tools.WindowsInstallerXml
             ObjectField field = (ObjectField)payloadRow.Fields[2];
             this.ContentFile = String.IsNullOrEmpty(field.CabinetFileId);
 
-            ResolvePayloadInfo(this);
+            ResolvePayloadInfo(this, suppressSha1Burn);
 
             return;
         }
 
-        public static void ResolvePayloadInfo(IPayloadInfo payloadInfo)
+        public static void ResolvePayloadInfo(IPayloadInfo payloadInfo, bool suppressSha1Burn)
         {
             if (String.IsNullOrEmpty(payloadInfo.SourceFile))
             {
@@ -272,7 +272,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             if (null != fileInfo)
             {
                 payloadInfo.FileSize = (int)fileInfo.Length;
-                payloadInfo.Hash = Common.GetFileHash(fileInfo);
+                payloadInfo.Hash = suppressSha1Burn ? PayloadInfoRow.HashSha512(fileInfo) : Common.GetFileHash(fileInfo);
 
                 // Try to get the certificate if payloadInfo is a signed file and we're not suppressing signature validation for payloadInfo payload.
                 X509Certificate2 certificate = null;
@@ -320,6 +320,26 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 payloadInfo.ProductName = versionInfo.ProductName;
                 payloadInfo.Description = versionInfo.FileDescription;
             }
+        }
+
+        internal static string HashSha512(FileInfo fileInfo)
+        {
+            byte[] hashBytes;
+            using (SHA512 managed = SHA512.Create())
+            {
+                using (FileStream stream = fileInfo.OpenRead())
+                {
+                    hashBytes = managed.ComputeHash(stream);
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                sb.AppendFormat("{0:X2}", hashBytes[i]);
+            }
+
+            return sb.ToString();
         }
     }
 }
