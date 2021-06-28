@@ -68,7 +68,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(CLRSupport)'=='true' ">
-    <DisableSpecificCompilerWarnings>4564;4800</DisableSpecificCompilerWarnings>
+    <DisableSpecificCompilerWarnings>4091;4564;4800</DisableSpecificCompilerWarnings>
     <LinkDelaySign>$(DelaySign)</LinkDelaySign>
     <LinkKeyFile>$(AssemblyOriginatorKeyFile)</LinkKeyFile>
   </PropertyGroup>
@@ -84,7 +84,7 @@
       <DisableSpecificWarnings>$(DisableSpecificCompilerWarnings)</DisableSpecificWarnings>
       <WarningLevel>Level4</WarningLevel>
       <AdditionalIncludeDirectories>$(WixVersionPath);$(ProjectDir)inc;$(MSBuildProjectDirectory);$(IntDir);$(SqlCESdkIncludePath);$(ProjectAdditionalIncludeDirectories);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_MSI=500;_WIN32_WINNT=0x0501;$(ArmPreprocessorDefinitions);$(Arm64PreprocessorDefinitions);$(UnicodePreprocessorDefinitions);_CRT_STDIO_LEGACY_WIDE_SPECIFIERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_MSI=500;_WIN32_WINNT=0x0600;$(ArmPreprocessorDefinitions);$(Arm64PreprocessorDefinitions);$(UnicodePreprocessorDefinitions);_CRT_STDIO_LEGACY_WIDE_SPECIFIERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <CallingConvention>StdCall</CallingConvention>

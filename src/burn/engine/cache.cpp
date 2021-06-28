@@ -282,7 +282,7 @@ extern "C" HRESULT CacheCalculatePayloadWorkingPath(
     ExitOnFailure(hr, "Failed to get working folder for payload.");
 
     hr = StrAllocConcat(psczWorkingPath, pPayload->sczKey, 0);
-    ExitOnFailure(hr, "Failed to append SHA1 hash as payload unverified path.");
+    ExitOnFailure(hr, "Failed to append Id as payload unverified path.");
 
 LExit:
     return hr;
@@ -300,7 +300,7 @@ extern "C" HRESULT CacheCalculateContainerWorkingPath(
     ExitOnFailure(hr, "Failed to get working folder for container.");
 
     hr = StrAllocConcat(psczWorkingPath, pContainer->sczHash, 0);
-    ExitOnFailure(hr, "Failed to append SHA1 hash as container unverified path.");
+    ExitOnFailure(hr, "Failed to append hash as container unverified path.");
 
 LExit:
     return hr;
@@ -1832,23 +1832,25 @@ static HRESULT VerifyHash(
     UNREFERENCED_PARAMETER(wzUnverifiedPayloadPath);
 
     HRESULT hr = S_OK;
-    BYTE rgbActualHash[SHA1_HASH_LEN] = { };
-    DWORD64 qwHashedBytes;
+    ALG_ID algid = (SHA512_HASH_LEN == cbHash) ? CALG_SHA_512 : CALG_SHA1;
+    DWORD cbActualHash = (SHA512_HASH_LEN == cbHash) ? SHA512_HASH_LEN : SHA1_HASH_LEN;
+    BYTE rgbActualHash[SHA512_HASH_LEN] = { }; // use SHA512 for the width as it is the largest hash
+    DWORD64 qwHashedBytes = 0;
     LPWSTR pszExpected = NULL;
     LPWSTR pszActual = NULL;
 
     // TODO: create a cryp hash file that sends progress.
-    hr = CrypHashFileHandle(hFile, PROV_RSA_FULL, CALG_SHA1, rgbActualHash, sizeof(rgbActualHash), &qwHashedBytes);
+    hr = CrypHashFileHandle(hFile, PROV_RSA_AES, algid, rgbActualHash, cbActualHash, &qwHashedBytes);
     ExitOnFailure1(hr, "Failed to calculate hash for path: %ls", wzUnverifiedPayloadPath);
 
     // Compare hashes.
-    if (cbHash != sizeof(rgbActualHash) || 0 != memcmp(pbHash, rgbActualHash, SHA1_HASH_LEN))
+    if (cbHash != cbActualHash || 0 != memcmp(pbHash, rgbActualHash, cbActualHash))
     {
         hr = CRYPT_E_HASH_VALUE;
 
         // Best effort to log the expected and actual hash value strings.
         if (SUCCEEDED(StrAllocHexEncode(pbHash, cbHash, &pszExpected)) &&
-            SUCCEEDED(StrAllocHexEncode(rgbActualHash, SHA1_HASH_LEN, &pszActual)))
+            SUCCEEDED(StrAllocHexEncode(rgbActualHash, cbActualHash, &pszActual)))
         {
             ExitOnFailure3(hr, "Hash mismatch for path: %ls, expected: %ls, actual: %ls", wzUnverifiedPayloadPath, pszExpected, pszActual);
         }

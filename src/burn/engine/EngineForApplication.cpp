@@ -401,6 +401,10 @@ public: // IBootstrapperEngine
         {
             hr = E_INVALIDARG;
         }
+        else if (BOOTSTRAPPER_UPDATE_HASH_TYPE_SHA512 == hashType && (SHA512_HASH_LEN != cbHash || !rgbHash))
+        {
+            hr = E_INVALIDARG;
+        }
         else
         {
             UpdateUninitialize(&m_pEngineState->update);

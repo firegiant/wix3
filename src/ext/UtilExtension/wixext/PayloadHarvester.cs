@@ -77,7 +77,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 SuppressSignatureValidation = false // assume signed, if its unsigned it won't get the certificate properties
             };
 
-            PayloadInfoRow.ResolvePayloadInfo(payloadInfo);
+            PayloadInfoRow.ResolvePayloadInfo(payloadInfo, suppressSha1Burn: false);
 
             return payloadInfo;
         }

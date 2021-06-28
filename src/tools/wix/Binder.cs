@@ -109,6 +109,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
         private StringCollection suppressICEs;
         private bool suppressLayout;
         private bool suppressPatchSequenceData;
+        private bool suppressSha1Burn;
         private bool suppressWixPdb;
         private bool suppressValidation;
 
@@ -499,6 +500,11 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     else if (parameter.Equals("spsd", StringComparison.Ordinal))
                     {
                         this.suppressPatchSequenceData = true;
+                    }
+                    else if (parameter.Equals("ssha1burn", StringComparison.Ordinal))
+                    {
+                        consoleMessageHandler.Display(this, WixWarnings.DeprecatedCommandLineSwitch(parameter));
+                        this.suppressSha1Burn = true;
                     }
                     else if (parameter.Equals("sval", StringComparison.Ordinal))
                     {
@@ -3351,7 +3357,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     allPayloads.Add(id, payloadInfo = (PayloadInfoRow)payloadInfoTable.CreateRow(row.SourceLineNumbers));
                 }
 
-                payloadInfo.FillFromPayloadRow(bundle, row);
+                payloadInfo.FillFromPayloadRow(bundle, row, this.suppressSha1Burn);
 
                 // Check if there is an override row for the display name or description.
                 Row payloadDisplayInformationRow;
@@ -3457,7 +3463,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     // Each catalog is also a payload
                     string payloadId = Common.GenerateIdentifier("pay", true, catalogRow.SourceFile);
                     string catalogFile = this.FileManager.ResolveFile(catalogRow.SourceFile, "Catalog", catalogRow.SourceLineNumbers, BindStage.Normal);
-                    PayloadInfoRow payloadInfo = PayloadInfoRow.Create(catalogRow.SourceLineNumbers, bundle, payloadId, Path.GetFileName(catalogFile), catalogFile, true, false, null, burnUXContainer.Id, PackagingType.Embedded);
+                    PayloadInfoRow payloadInfo = PayloadInfoRow.Create(catalogRow.SourceLineNumbers, bundle, payloadId, Path.GetFileName(catalogFile), catalogFile, true, false, null, burnUXContainer.Id, PackagingType.Embedded, this.suppressSha1Burn);
 
                     // Add the payload to the UX container
                     allPayloads.Add(payloadInfo.Id, payloadInfo);
@@ -3485,7 +3491,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 {
                     Table chainPackageInfoTable = bundle.EnsureTable(this.core.TableDefinitions["ChainPackageInfo"]);
 
-                    ChainPackageInfo packageInfo = new ChainPackageInfo(row, wixGroupTable, allPayloads, containers, this.FileManager, this.core, bundle);
+                    ChainPackageInfo packageInfo = new ChainPackageInfo(row, wixGroupTable, allPayloads, containers, this.FileManager, this.core, bundle, this.suppressSha1Burn);
                     allPackages.Add(packageInfo.Id, packageInfo);
 
                     chainPackageInfoTable.Rows.Add(packageInfo);
@@ -3843,7 +3849,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
 
             // Add the bootstrapper application manifest to the set of UX payloads.
             PayloadInfoRow baManifestPayload = PayloadInfoRow.Create(null /*TODO*/, bundle, Common.GenerateIdentifier("ux", true, "BootstrapperApplicationData.xml"),
-                "BootstrapperApplicationData.xml", baManifestPath, false, true, null, burnUXContainer.Id, PackagingType.Embedded);
+                "BootstrapperApplicationData.xml", baManifestPath, false, true, null, burnUXContainer.Id, PackagingType.Embedded, this.suppressSha1Burn);
             baManifestPayload.EmbeddedId = string.Format(CultureInfo.InvariantCulture, BurnCommon.BurnUXContainerEmbeddedIdFormat, uxPayloads.Count);
             uxPayloads.Add(baManifestPayload);
 
