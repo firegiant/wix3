@@ -4826,7 +4826,23 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 resources.Add(bitmap);
             }
 
-            resources.Save(bundleTempPath);
+            for (int retryCount = 1; ; ++retryCount)
+            {
+                try
+                {
+                    resources.Save(bundleTempPath);
+                    break;
+                }
+                catch (IOException)
+                {
+                    if (retryCount >= 20)
+                    {
+                        throw;
+                    }
+
+                    Thread.Sleep(250);
+                }
+            }
         }
 
         private void WriteBurnManifestContainerAttributes(XmlTextWriter writer, string executableName, ContainerInfo container, int containerIndex, BinderFileManager fileManager)
