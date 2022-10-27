@@ -6,6 +6,7 @@
   <PropertyGroup>
     <TargetExt Condition=" '$(TargetExt)'=='' ">.chm</TargetExt>
     <TargetPath>$(OutputPath_x86)$(TargetName)$(TargetExt)</TargetPath>
+    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)'=='' ">v4.6.2</TargetFrameworkVersion>
 
     <IntermediateDocumentsFolder>$(IntermediateOutputPath)documents\</IntermediateDocumentsFolder>
     <IntermediateDocumentsPreprocessedFolder>$(IntermediateOutputPath)intermediate\</IntermediateDocumentsPreprocessedFolder>

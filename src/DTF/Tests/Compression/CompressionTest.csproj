@@ -9,7 +9,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.Deployment.Test</RootNamespace>
     <AssemblyName>Microsoft.Deployment.Test.Compression</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
