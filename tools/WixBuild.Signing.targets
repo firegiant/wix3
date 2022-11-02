@@ -4,10 +4,9 @@
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
-    <SignToolExe>"$(PlatformSdkBinPath)signtool.exe"</SignToolExe>
-    <CommonSignParameters>/d "WiX Toolset" /du http://wixtoolset.org</CommonSignParameters>
-    <Sha1SignParameters>$(CommonSignParameters) /t http://timestamp.digicert.com /sha1 $(FireGiantSha1Thumbprint)</Sha1SignParameters>
-    <Sha256SignParameters>$(CommonSignParameters) /tr http://timestamp.digicert.com /td sha256 /fd sha256 /as /sha1 $(FireGiantSha256Thumbprint)</Sha256SignParameters>
+    <SigningToolExe>AzureSignTool.exe</SigningToolExe>
+    <SigningCommand>sign</SigningCommand>
+    <SigningConfiguration>-d "FireGiant WiX Toolset" -du https://www.firegiant.com -kvu $(SigningKeyVaultUri) -kvt $(SigningTenantId) -kvi $(SigningClientId) -kvs $(SigningClientSecret) -kvc $(SigningCertName) -tr http://timestamp.digicert.com</SigningConfiguration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,8 +15,7 @@
   </ItemGroup>
 
   <Target Name="SignFiles" AfterTargets="AfterBuild" Condition="'$(SignOutput)'=='true'">
-    <Exec Command="$(SignToolExe) sign $(Sha1SignParameters) &quot;%(FilesToSign.FullPath)&quot;" />
-    <Exec Command="$(SignToolExe) sign $(Sha256SignParameters) &quot;%(FilesToSign.FullPath)&quot;" />
+    <Exec Command="$(SigningToolExe) $(SigningCommand) $(SigningConfiguration) &quot;%(FilesToSign.FullPath)&quot;" />
   </Target>
 
   <!--
@@ -33,18 +31,15 @@
   <Target Name="SignMsi" />
 
   <Target Name="SignContainers">
-    <Exec Command="$(SignToolExe) sign $(Sha1SignParameters) &quot;%(SignContainers.FullPath)&quot;" />
-    <Exec Command="$(SignToolExe) sign $(Sha256SignParameters) &quot;%(SignContainers.FullPath)&quot;" />
+    <Exec Command="$(SigningToolExe) $(SigningCommand) $(SigningConfiguration) &quot;%(SignContainers.FullPath)&quot;" />
   </Target>
 
   <Target Name="SignBundleEngine">
-    <Exec Command="$(SignToolExe) sign $(Sha1SignParameters) &quot;%(SignBundleEngine.FullPath)&quot;" />
-    <Exec Command="$(SignToolExe) sign $(Sha256SignParameters) &quot;%(SignBundleEngine.FullPath)&quot;" />
+    <Exec Command="$(SigningToolExe) $(SigningCommand) $(SigningConfiguration) &quot;%(SignBundleEngine.FullPath)&quot;" />
   </Target>
 
   <Target Name="SignBundle">
-    <Exec Command="$(SignToolExe) sign $(Sha1SignParameters) &quot;%(SignBundle.FullPath)&quot;" />
-    <Exec Command="$(SignToolExe) sign $(Sha256SignParameters) &quot;%(SignBundle.FullPath)&quot;" />
+    <Exec Command="$(SigningToolExe) $(SigningCommand) $(SigningConfiguration) &quot;%(SignBundle.FullPath)&quot;" />
   </Target>
 
   <!-- Sentinel value that indicates WixBuid.Signing.targets has been initialized. -->
