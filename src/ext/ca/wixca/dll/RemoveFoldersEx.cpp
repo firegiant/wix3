@@ -2,7 +2,7 @@
 
 #include "precomp.h"
 
-LPCWSTR vcsRemoveFolderExQuery = 
+LPCWSTR vcsRemoveFolderExQuery =
     L"SELECT `WixRemoveFolderEx`, `Component_`, `Property`, `InstallMode`, `WixRemoveFolderEx`.`Condition`, `Component`.`Attributes` "
     L"FROM `WixRemoveFolderEx`,`Component` "
     L"WHERE `WixRemoveFolderEx`.`Component_`=`Component`.`Component`";
@@ -37,6 +37,14 @@ static HRESULT RecursePath(
         ExitOnFailure(hr, "Custom action was told to act on a 64-bit component, but was unable to disable filesystem redirection through the Wow64 API.");
     }
 #endif
+
+    // Do NOT follow junctions.
+    DWORD dwAttributes = ::GetFileAttributesW(wzPath);
+    if (dwAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+    {
+        WcaLog(LOGMSG_STANDARD, "Path is a junction; skipping: %ls", wzPath);
+        ExitFunction();
+    }
 
     // First recurse down to all the child directories.
     hr = StrAllocFormatted(&sczSearch, L"%s*", wzPath);
@@ -210,10 +218,10 @@ extern "C" UINT WINAPI WixRemoveFoldersEx(
 
         hr = PathExpand(&sczExpandedPath, sczPath, PATH_EXPAND_ENVIRONMENT);
         ExitOnFailure2(hr, "Failed to expand path: %S for row: %S", sczPath, sczId);
-        
+
         hr = PathBackslashTerminate(&sczExpandedPath);
         ExitOnFailure1(hr, "Failed to backslash-terminate path: %S", sczExpandedPath);
-    
+
         WcaLog(LOGMSG_STANDARD, "Recursing path: %S for row: %S.", sczExpandedPath, sczId);
         hr = RecursePath(sczExpandedPath, sczId, sczComponent, sczProperty, iMode, f64BitComponent, &dwCounter, &hTable, &hColumns);
         ExitOnFailure2(hr, "Failed while navigating path: %S for row: %S", sczPath, sczId);
