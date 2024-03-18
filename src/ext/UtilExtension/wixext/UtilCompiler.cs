@@ -121,11 +121,11 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
         {
             /// <summary>Create a .lnk file.</summary>
             Link = 0,
-            
+
             /// <summary>Create a .url file.</summary>
             Url,
         }
-        
+
         /// <summary>
         /// Types of permission setting methods.
         /// </summary>
@@ -722,7 +722,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                 }
             }
 
-            int registryRoot = 2; // MsiInterop.MsidbRegistryRootLocalMachine 
+            int registryRoot = 2; // MsiInterop.MsidbRegistryRootLocalMachine
             string eventSourceKey = String.Format(@"SYSTEM\CurrentControlSet\Services\EventLog\{0}\{1}", logName, sourceName);
             string id = this.Core.CreateRegistryRow(sourceLineNumbers, registryRoot, eventSourceKey, "EventMessageFile", String.Concat("#%", eventMessageFile), componentId, false);
 
@@ -1225,7 +1225,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="sourceLineNumbers">Source line number for the parent element.</param>
         /// <param name="id">Identifier of the search (key into the WixSearch table)</param>
@@ -1664,7 +1664,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
         {
             // add the appropriate extension based on type of shortcut
             name = String.Concat(name, InternetShortcutType.Url == type ? ".url" : ".lnk");
-            
+
             Row row = core.CreateRow(sourceLineNumbers, "WixInternetShortcut");
             row[0] = shortcutId;
             row[1] = componentId;
@@ -2501,7 +2501,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                     Row messageRow = this.Core.CreateRow(sourceLineNumbers, "XmlFile");
                     messageRow[0] = String.Concat("Config_", fileId, "MessageFile");
                     messageRow[1] = String.Concat("[#", fileId, "]");
-                    messageRow[2] = "/*/*/*/*[\\[]@messageFileName[\\]]"; 
+                    messageRow[2] = "/*/*/*/*[\\[]@messageFileName[\\]]";
                     messageRow[3] = "messageFileName";
                     messageRow[4] = messageFile;
                     messageRow[5] = 4 | 0x00001000;  //bulk write | preserve modified date
@@ -2523,13 +2523,13 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
                     Row resourceRow = this.Core.CreateRow(sourceLineNumbers, "XmlFile");
                     resourceRow[0] = String.Concat("Config_", fileId, "ResourceFile");
                     resourceRow[1] = String.Concat("[#", fileId, "]");
-                    resourceRow[2] = "/*/*/*/*[\\[]@resourceFileName[\\]]"; 
+                    resourceRow[2] = "/*/*/*/*[\\[]@resourceFileName[\\]]";
                     resourceRow[3] = "resourceFileName";
                     resourceRow[4] = resourceFile;
                     resourceRow[5] = 4 | 0x00001000;  //bulk write | preserve modified date
                     resourceRow[6] = componentId;
-                }   
-                
+                }
+
             }
 
             // Reference custom actions since nothing will happen without them
@@ -3203,7 +3203,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
 
                 this.Core.EnsureTable(sourceLineNumbers, "Registry");
                 this.Core.EnsureTable(sourceLineNumbers, "RemoveRegistry");
-                this.Core.CreateWixSimpleReferenceRow(sourceLineNumbers, "CustomAction", "WixRemoveRegistryKeyEx");
+                this.Core.CreateCustomActionReference(sourceLineNumbers, "WixRemoveRegistryKeyEx", Platforms.ARM | Platforms.ARM64);
             }
         }
 
@@ -3753,7 +3753,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
             {
                 this.Core.OnMessage(WixErrors.IllegalAttributeWithoutOtherAttributes(sourceLineNumbers, node.Name, "Action", "Name"));
             }
-            
+
             // find unexpected child elements
             foreach (XmlNode child in node.ChildNodes)
             {
